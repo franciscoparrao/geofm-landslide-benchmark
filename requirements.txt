@@ -1,0 +1,10 @@
+numpy>=2.4
+scikit-learn>=1.8
+rasterio>=1.4
+torch>=2.11
+terratorch>=1.2
+umap-learn>=0.5
+hdbscan>=0.8
+pyproj>=3.6
+h5py>=3.10
+huggingface_hub>=0.23
