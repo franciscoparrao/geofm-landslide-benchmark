@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+title: "geofm-landslide-benchmark: cross-model evaluation protocol for geospatial foundation models in landslide susceptibility"
+message: "If you use this software or the derived datasets, please cite the manuscript below."
+type: software
+authors:
+  - given-names: Francisco
+    family-names: Parra
+    affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
+    orcid: "https://orcid.org/TODO"
+  - given-names: Verónica
+    family-names: Gil-Costa
+    affiliation: "Universidad Nacional de San Luis, San Luis, Argentina"
+    orcid: "https://orcid.org/TODO"
+  - given-names: Carolina
+    family-names: Bonacic
+    affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
+    orcid: "https://orcid.org/TODO"
+  - given-names: Mauricio
+    family-names: Marín
+    affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
+    orcid: "https://orcid.org/TODO"
+license: MIT
+repository-code: "https://github.com/franciscoparrao/geofm-landslide-benchmark"
+preferred-citation:
+  type: article
+  title: "Where do geospatial foundation models help? Cross-model evaluation of TerraMind and Prithvi-EO-2.0 for landslide susceptibility across the Chilean climate gradient"
+  authors:
+    - given-names: Francisco
+      family-names: Parra
+    - given-names: Verónica
+      family-names: Gil-Costa
+    - given-names: Carolina
+      family-names: Bonacic
+    - given-names: Mauricio
+      family-names: Marín
+  journal: "Computers & Geosciences"
+  year: 2026
+  notes: "Submitted"
