@@ -147,9 +147,13 @@ def _window_stats(band, rows, cols, windows=CONTEXT_WINDOWS):
     return point, stats
 
 
-def spectral_layers(basin):
-    """Yield (name, full-resolution float32 array) for the 8 spectral layers."""
-    path = S2_COMPOSITE_BASE / f"{basin}_s2l2a_2023.tif"
+def spectral_layers(basin, path=None):
+    """Yield (name, full-resolution float32 array) for the 8 spectral layers.
+
+    `path` overrides the default 2023 composite (used by the pre/post-event
+    test, which swaps in an earlier composite for the same basin).
+    """
+    path = path or S2_COMPOSITE_BASE / f"{basin}_s2l2a_2023.tif"
     names = ["blue", "green", "red", "nir_narrow", "swir1", "swir2"]
     with rasterio.open(path) as src:
         for name, idx in zip(names, HLS_BANDS_1BASED):

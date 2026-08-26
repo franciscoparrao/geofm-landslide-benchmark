@@ -5,7 +5,7 @@ Targets the 12 bands expected by TerraMind v1 (PRETRAINED_BANDS["untok_sen2l2a@2
   B05/B06/B07 (Red edge), B08 (NIR broad), B8A (NIR narrow),
   B09 (Water vapor), B11/B12 (SWIR).
 
-Output: paper/data/s2_composites/{basin}_s2l2a_2023.tif
+Output: paper/data/s2_composites/{basin}_s2l2a_{year}.tif
   12-band GeoTIFF, uint16 (raw S2 reflectance × 10000), aligned to basin DEM grid.
 
 Implementation:
@@ -34,14 +34,14 @@ import xarray as xr
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-POSTDOC = Path("/home/franciscoparrao/proyectos/postdoc/papers/paper1_susceptibilidad")
+POSTDOC = Path("/mnt/kingston/proyectos/postdoc/papers/paper1_susceptibilidad")
 POLY_DIR = POSTDOC / "basin_polygons"
 DEM_DIR_BASE = POSTDOC / "factors"
 OUT_DIR = ROOT / "paper/data/s2_composites"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"
-DATE_RANGE = "2023-01-01/2023-12-31"
+DEFAULT_YEAR = 2023
 CLOUD_THRESHOLD = 20
 
 # TerraMind expects S2L2A in this band order (PRETRAINED_BANDS)
@@ -74,20 +74,43 @@ def load_dem_grid(basin_id):
         return src.transform, src.crs, src.height, src.width, src.bounds
 
 
-def search_items(client, bbox_wgs84, max_items=30):
-    """Return up to max_items least-cloudy S2 L2A items intersecting bbox."""
+def search_items(client, bbox_wgs84, max_items=30, year=DEFAULT_YEAR, months=None):
+    """Return up to max_items least-cloudy S2 L2A items intersecting bbox.
+
+    `months` restricts acquisitions to a (first, last) inclusive month range, so
+    two composites from different years can be matched seasonally.
+    """
     search = client.search(
         collections=["sentinel-2-l2a"],
         bbox=bbox_wgs84,
-        datetime=DATE_RANGE,
+        datetime=f"{year}-01-01/{year}-12-31",
         query={"eo:cloud_cover": {"lt": CLOUD_THRESHOLD}},
     )
     items = list(search.items())
+    if months:
+        lo, hi = months
+        items = [it for it in items if lo <= it.datetime.month <= hi]
     items_sorted = sorted(items, key=lambda it: it.properties.get("eo:cloud_cover", 100.0))
     return items_sorted[:max_items]
 
 
-def build_composite(basin_id):
+def baseline_offset(item):
+    """BOA_ADD_OFFSET introduced by S2 processing baseline 04.00 (Jan 2022).
+
+    Products from baseline >= 04.00 carry DN = reflectance*10000 + 1000, while
+    earlier products (and the HLS convention Prithvi was pretrained on) do not.
+    Compositing across the boundary without correcting this shifts radiometry by
+    a constant 1000 DN.
+    """
+    try:
+        pb = float(str(item.properties.get("s2:processing_baseline", "0")))
+    except ValueError:
+        pb = 0.0
+    return 1000.0 if pb >= 4.0 else 0.0
+
+
+def build_composite(basin_id, year=DEFAULT_YEAR, months=None,
+                    max_items=30, harmonize=False, suffix=""):
     print(f"\n=== {basin_id} ===")
     t0 = perf_counter()
 
@@ -98,8 +121,8 @@ def build_composite(basin_id):
     print(f"  Basin bbox WGS84: {tuple(round(x, 3) for x in bbox_wgs84)}")
 
     client = get_stac_client()
-    items = search_items(client, bbox_wgs84)
-    print(f"  Found {len(items)} S2 L2A items with cloud<{CLOUD_THRESHOLD}% in {DATE_RANGE}")
+    items = search_items(client, bbox_wgs84, max_items=max_items, year=year, months=months)
+    print(f"  Found {len(items)} S2 L2A items with cloud<{CLOUD_THRESHOLD}% in {year}")
     if not items:
         raise SystemExit("No items found")
 
@@ -118,6 +141,15 @@ def build_composite(basin_id):
     print(f"  Stack shape (time, band, y, x): {stack.shape}")
     print(f"  Stack dtype: {stack.dtype}")
 
+    if harmonize:
+        import xarray as _xr
+        offsets = np.array([baseline_offset(it) for it in items], dtype="float64")
+        n_off = int((offsets > 0).sum())
+        print(f"  Harmonizing radiometry: subtracting BOA_ADD_OFFSET from "
+              f"{n_off}/{len(items)} items (baseline >= 04.00)")
+        off_da = _xr.DataArray(offsets, dims=["time"], coords={"time": stack.time})
+        stack = (stack - off_da).clip(min=0)
+
     # Mean across time is chunk-friendly (median would require full timeseries
     # per pixel in memory). With scene-level cloud filter < 20% and ≤30
     # least-cloudy items, mean is a reasonable cloud-robust composite.
@@ -129,7 +161,7 @@ def build_composite(basin_id):
     print(f"  Composite computed in {perf_counter() - t1:.1f}s")
 
     # Write
-    out_path = OUT_DIR / f"{basin_id}_s2l2a_2023.tif"
+    out_path = OUT_DIR / f"{basin_id}_s2l2a_{year}{suffix}.tif"
     profile = {
         "driver": "GTiff",
         "height": composite_np.shape[1],
@@ -177,8 +209,23 @@ def build_composite(basin_id):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--basin", default="06_rio_huasco")
+    parser.add_argument("--year", type=int, default=DEFAULT_YEAR,
+                        help="Calendar year of the composite (e.g. 2016 for a "
+                             "pre-event composite in Huasco).")
+    parser.add_argument("--months", default=None,
+                        help="Inclusive month range 'lo-hi' (e.g. '1-6') to match "
+                             "two composites seasonally.")
+    parser.add_argument("--max-items", type=int, default=30)
+    parser.add_argument("--harmonize", action="store_true",
+                        help="Subtract the baseline-04.00 BOA_ADD_OFFSET so that "
+                             "pre- and post-2022 acquisitions share a radiometric scale.")
+    parser.add_argument("--suffix", default="",
+                        help="Appended to the output filename.")
     args = parser.parse_args()
-    build_composite(args.basin)
+    months = tuple(int(x) for x in args.months.split("-")) if args.months else None
+    build_composite(args.basin, year=args.year, months=months,
+                    max_items=args.max_items, harmonize=args.harmonize,
+                    suffix=args.suffix)
 
 
 if __name__ == "__main__":

@@ -22,12 +22,17 @@ src/                      benchmark pipeline
   point_probes.py         point-probe controls (SPEC / A+context / A+full context),
                           constrained-negative sensitivity (--negatives constrained),
                           within-environment FM re-encoding (--with-fms all|terramind)
+  pre_post_event_test.py  pre-/post-event composite test of the scar caveat (Huasco):
+                          a 2016 composite predates the 2017+2020 events, so swapping
+                          only the composite isolates post-event signal
   build_stack.py          17-layer geomorphometric feature stack -> {basin}_stack.npz
   inventory_temporal_analysis.py  trigger/temporal composition of the inventories
   pca_kmeans_baseline.py, umap_hdbscan.py, select_k.py,
   bootstrap_stability.py, compare_basins.py   unsupervised characterization
 paper_artifacts/          table (make_tab*.py) and figure (make_fig*.py) generators,
-                          Sentinel-2 L2A composite builder (download_s2_composite.py)
+                          Sentinel-2 L2A composite builder (download_s2_composite.py:
+                          --year / --months / --harmonize for season-matched,
+                          radiometrically harmonized composites)
 data/                     see data/README.md for how to obtain all inputs
 ```
 
@@ -70,7 +75,19 @@ TerraMind v1-tiny encodes a basin in about one minute.
    python src/point_probes.py --basin 06_rio_huasco --negatives constrained
    # add --with-fms all to re-encode the FM pipelines in the same environment
    ```
-6. Regenerate tables and figures: run the `paper_artifacts/make_*.py` scripts.
+6. Pre-/post-event scar test (Huasco). Build the matched composites first:
+   ```bash
+   python paper_artifacts/download_s2_composite.py --basin 06_rio_huasco \
+       --year 2016 --months 1-6 --max-items 60 --harmonize --suffix _matched
+   python paper_artifacts/download_s2_composite.py --basin 06_rio_huasco \
+       --year 2023 --months 1-6 --max-items 60 --harmonize --suffix _matched
+   python src/pre_post_event_test.py
+   ```
+   Note: Sentinel-2 processing baseline 04.00 (January 2022) introduced a
+   1000 DN BOA_ADD_OFFSET. `--harmonize` removes it so that pre- and post-2022
+   acquisitions share a radiometric scale; compositing across that boundary
+   without it produces a spurious brightness difference between years.
+7. Regenerate tables and figures: run the `paper_artifacts/make_*.py` scripts.
 
 All seeds are fixed (42; per-fold seeds 42+fold). Outputs are standardized
 JSON files per (basin, encoder, initialization) cell.

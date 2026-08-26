@@ -45,7 +45,7 @@ def main():
     lines = [
         r"\begin{table*}",
         r"\centering",
-        r"\caption{Point-probe controls on the identical dataset and spatial folds of the benchmark. \textbf{A}: 17 geomorphometric features at the candidate pixel. \textbf{Spectral-point}: six HLS-equivalent bands plus NDVI and NBR sampled at the candidate pixel from the same $2023$ Sentinel-2 composite used by the FM pipelines (post-event scar-signal probe). Context variants augment the point features with nan-aware mean and standard deviation of each layer over $7\times7$, $37\times37$ and $111\times111$ pixel windows ($0.2$--$3.3$~km): \textbf{A + terrain context} extends the geomorphometric layers, \textbf{spectral point + context} the composite layers, and \textbf{A + full context} both --- the fully context-matched manual comparator to the FM pipelines. $\Delta$ROC is against A on identical folds with fold-level paired $95\%$ $t$-intervals (df $= 4$); $^{*}$: interval excludes zero. The last column reports the paired fold-level difference of the strongest stored FM pipeline in each basin against A + full context.}",
+        r"\caption{Point-probe controls on the identical dataset and spatial folds of the benchmark. \textbf{A}: 17 geomorphometric features at the candidate pixel. \textbf{Spectral-point}: six HLS-equivalent bands plus NDVI and NBR sampled at the candidate pixel from the same $2023$ Sentinel-2 composite used by the FM pipelines (post-event scar-signal probe). Context variants augment the point features with nan-aware mean and standard deviation of each layer over $7\times7$, $37\times37$ and $111\times111$ pixel windows ($0.2$--$3.3$~km): \textbf{A + terrain context} extends the geomorphometric layers, \textbf{spectral point + context} the composite layers, and \textbf{A + full context} both --- the fully context-matched manual comparator to the FM pipelines. $\Delta$ROC is against A on identical folds with fold-level paired $95\%$ $t$-intervals (df $= 4$); $^{*}$: interval excludes zero. The last column reports the paired fold-level difference of the strongest FM pipeline in each basin against A + full context; FM embeddings were re-encoded in the same software environment as the controls, so all comparisons are within-environment and fold-paired.}",
         r"\label{tab:pointprobes}",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{2pt}",
@@ -63,12 +63,12 @@ def main():
 
         # strongest stored FM by mean roc
         best_key, best_mean = None, -1.0
-        for key in ("TM_MM", "PRITHVI"):
+        for key in ("TM_DEM_ENV", "TM_MM_ENV", "PRITHVI_ENV"):
             if key in fm:
                 mmean = sum(fm[key]["roc"]) / len(fm[key]["roc"])
                 if mmean > best_mean:
                     best_key, best_mean = key, mmean
-        fmlab = {"TM_MM": "TM+DEM+S2", "PRITHVI": "Prithvi+S2"}.get(best_key, "?")
+        fmlab = {"TM_DEM_ENV": "TM+DEM", "TM_MM_ENV": "TM+DEM+S2", "PRITHVI_ENV": "Prithvi+S2"}.get(best_key, "?")
         dvs = [x - a for x, a in zip(fm[best_key]["roc"], fm["AFULL"]["roc"])]
         best_cell = f"{fmlab}: {fmt_delta(dvs)}"
 

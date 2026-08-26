@@ -21,7 +21,9 @@ BASINS = [("06_rio_huasco", "Huasco"),
 SETS = [("SPEC", "Spec.-point (8)"),
         ("ACTX", "A + terrain ctx (119)"),
         ("SCTX", "Spec. + ctx (56)"),
-        ("AFULL", "A + full ctx (175)")]
+        ("AFULL", "A + full ctx (175)"),
+        ("TM_DEM_ENV", "TerraMind+DEM"),
+        ("TM_MM_ENV", "TerraMind+DEM+S2")]
 
 T_975_DF4 = 2.776
 
@@ -44,7 +46,7 @@ def main():
     lines = [
         r"\begin{table*}",
         r"\centering",
-        r"\caption{Constrained-negative sensitivity: manual pipelines re-run with negatives restricted to the positives' slope envelope ($\geq$ 10th percentile of slope at positive locations; Section~\ref{sec:methods:pointprobes}). AUC ROC with fold-level paired $95\%$ $t$-intervals of the difference against A on the same (stratified) folds; $^{*}$: interval excludes zero. AUC PR of A is reported per basin to show the hardening of the task relative to uniform sampling.}",
+        r"\caption{Constrained-negative sensitivity: manual pipelines re-run with negatives restricted to the positives' slope envelope ($\geq$ 10th percentile of slope at positive locations; Section~\ref{sec:methods:pointprobes}), including the TerraMind pipelines re-encoded in the same environment. AUC ROC with fold-level paired $95\%$ $t$-intervals of the difference against A on the same (stratified) folds; $^{*}$: interval excludes zero. AUC PR of A is reported per basin to show the hardening of the task relative to uniform sampling.}",
         r"\label{tab:constrained}",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{3pt}",
@@ -62,6 +64,8 @@ def main():
         a_pr = sum(fm["A"]["pr"]) / len(fm["A"]["pr"])
         first = True
         for key, label in SETS:
+            if key not in fm:
+                continue
             roc = fm[key]["roc"]
             droc = [x - a for x, a in zip(roc, A_roc)]
             mroc = sum(roc) / len(roc)
