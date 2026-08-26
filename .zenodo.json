@@ -1,19 +1,51 @@
 {
   "title": "geofm-landslide-benchmark: cross-model evaluation protocol and derived datasets for geospatial foundation models in landslide susceptibility",
-  "description": "Reproducibility package for 'Where do geospatial foundation models help? Cross-model evaluation of TerraMind and Prithvi-EO-2.0 for landslide susceptibility across the Chilean climate gradient' (submitted to Computers & Geosciences). Includes the cross-FM linear-probe benchmark with random-initialization ablation and point-probe controls (context-matched manual baselines, spectral scar probe, constrained-negative sensitivity), the table/figure generators, and the derived datasets: 17-layer geomorphometric feature stacks (npz), Sentinel-2 L2A 2023 composites (GeoTIFF), sampled benchmark points with spatial-block ids (CSV), and per-fold result files (JSON) for three Chilean basins (Huasco, Maipo, Maule).",
+  "description": "Reproducibility package for 'Where do geospatial foundation models help? Cross-model evaluation of TerraMind and Prithvi-EO-2.0 for landslide susceptibility across the Chilean climate gradient' (submitted to Computers & Geosciences). Includes the cross-FM linear-probe benchmark with random-initialization ablation and point-probe controls (context-matched manual baselines, spectral scar probe, constrained-negative sensitivity, and a pre-/post-event composite test of scar leakage), the table/figure generators, and the derived datasets: 17-layer geomorphometric feature stacks (npz) for five Chilean basins, Sentinel-2 L2A composites (GeoTIFF) including a season-matched, radiometrically harmonized 2016/2023 pair for the pre-/post-event test, sampled benchmark points with spatial-block ids (CSV), and per-fold result files (JSON).",
   "creators": [
-    {"name": "Parra, Francisco", "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile", "orcid": "TODO"},
-    {"name": "Gil-Costa, Verónica", "affiliation": "Universidad Nacional de San Luis, San Luis, Argentina", "orcid": "TODO"},
-    {"name": "Bonacic, Carolina", "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile", "orcid": "TODO"},
-    {"name": "Marín, Mauricio", "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile", "orcid": "TODO"}
+    {
+      "name": "Parra, Francisco",
+      "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile",
+      "orcid": "TODO"
+    },
+    {
+      "name": "Gil-Costa, Verónica",
+      "affiliation": "Universidad Nacional de San Luis, San Luis, Argentina",
+      "orcid": "TODO"
+    },
+    {
+      "name": "Bonacic, Carolina",
+      "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile",
+      "orcid": "TODO"
+    },
+    {
+      "name": "Marín, Mauricio",
+      "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile",
+      "orcid": "TODO"
+    }
   ],
-  "keywords": ["landslide susceptibility", "geospatial foundation models", "TerraMind", "Prithvi-EO-2.0", "spatial cross-validation", "benchmark", "Chilean Andes", "reproducibility"],
+  "keywords": [
+    "landslide susceptibility",
+    "geospatial foundation models",
+    "TerraMind",
+    "Prithvi-EO-2.0",
+    "spatial cross-validation",
+    "benchmark",
+    "Chilean Andes",
+    "reproducibility",
+    "scar leakage",
+    "Sentinel-2 processing baseline"
+  ],
   "license": "MIT",
   "upload_type": "software",
   "access_right": "open",
   "language": "eng",
   "communities": [],
   "related_identifiers": [
-    {"identifier": "https://github.com/franciscoparrao/geofm-landslide-benchmark", "relation": "isSupplementTo", "scheme": "url"}
-  ]
+    {
+      "identifier": "https://github.com/franciscoparrao/geofm-landslide-benchmark",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ],
+  "version": "1.1.0"
 }
