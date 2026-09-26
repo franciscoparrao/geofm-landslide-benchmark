@@ -1,0 +1,24 @@
+\begin{table*}
+\centering
+\caption{Cross-model benchmark in three Chilean basins spanning a $22^{\circ}$ latitude gradient. The 17-feature geomorphometric baseline (\textbf{A}) is contrasted against three foundation-model pipelines: TerraMind v1-tiny with DEM only; TerraMind v1-tiny multimodal (DEM and Sentinel-2 L2A); and Prithvi-EO-2.0-300M with HLS-equivalent Sentinel-2 bands. AUC values are 5-fold spatial-holdout means $\pm$ across-fold standard deviation. $\Delta$ROC is the fold-mean difference, reported with two intervals: the primary fold-level paired $95\%$ $t$-interval (df $= 4$), which treats spatial folds as the exchangeable unit, and the secondary pooled paired-bootstrap $95\%$ CI ($N=1{,}000$) over concatenated test predictions, which has larger nominal sample size but ignores spatial autocorrelation and cross-fold score pooling and is therefore anti-conservative. $^{*}$: fold-level interval excludes zero; $^{\dagger}$: pooled bootstrap interval excludes zero.}
+\label{tab:benchmark}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lllccccc}
+\toprule
+Basin & Regime & Pipeline & A ROC & B ROC & $\Delta$ROC & fold-level 95\% CI & pooled boot.\ 95\% CI \\
+\midrule
+Huasco & Semi-arid & TerraMind+DEM & 0.940 $\pm$ 0.052 & 0.998 $\pm$ 0.002 & +0.058 & [-0.016, +0.131] & [+0.074, +0.108]$^{\dagger}$ \\
+Huasco & Semi-arid & TerraMind+DEM+S2L2A & 0.940 $\pm$ 0.052 & 0.997 $\pm$ 0.003 & +0.057 & [-0.015, +0.130] & [+0.076, +0.110]$^{\dagger}$ \\
+Huasco & Semi-arid & Prithvi-EO-2.0+S2 & 0.940 $\pm$ 0.052 & 0.998 $\pm$ 0.003 & +0.058 & [-0.015, +0.130] & [+0.075, +0.109]$^{\dagger}$ \\
+\midrule
+Maipo & Mediterranean & TerraMind+DEM & 0.819 $\pm$ 0.092 & 0.845 $\pm$ 0.106 & +0.026 & [-0.194, +0.245] & [+0.017, +0.091]$^{\dagger}$ \\
+Maipo & Mediterranean & TerraMind+DEM+S2L2A & 0.819 $\pm$ 0.092 & 0.880 $\pm$ 0.053 & +0.061 & [-0.082, +0.204] & [+0.047, +0.105]$^{\dagger}$ \\
+Maipo & Mediterranean & Prithvi-EO-2.0+S2 & 0.819 $\pm$ 0.092 & 0.943 $\pm$ 0.035 & +0.124 & [+0.013, +0.235]$^{*}$ & [+0.109, +0.168]$^{\dagger}$ \\
+\midrule
+Maule & Temperate-humid & TerraMind+DEM & 0.922 $\pm$ 0.022 & 0.881 $\pm$ 0.026 & -0.042 & [-0.092, +0.009] & [-0.056, -0.013]$^{\dagger}$ \\
+Maule & Temperate-humid & TerraMind+DEM+S2L2A & 0.922 $\pm$ 0.022 & 0.850 $\pm$ 0.042 & -0.073 & [-0.158, +0.013] & [-0.081, -0.035]$^{\dagger}$ \\
+Maule & Temperate-humid & Prithvi-EO-2.0+S2 & 0.922 $\pm$ 0.022 & 0.837 $\pm$ 0.049 & -0.085 & [-0.147, -0.023]$^{*}$ & [-0.101, -0.056]$^{\dagger}$ \\
+\bottomrule
+\end{tabular}
+\end{table*}

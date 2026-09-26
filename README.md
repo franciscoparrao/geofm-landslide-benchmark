@@ -76,6 +76,23 @@ The heavy artifacts — patch memmaps, embedding caches, composites and
 susceptibility rasters — are not versioned here; the steps below rebuild them
 from the raw inputs.
 
+To verify that the claim holds rather than taking it on trust:
+
+```bash
+pip install "scipy==1.16.3"        # the whole dependency for this path
+python tests/test_reproduce_table3.py
+```
+
+The test regenerates Table 3 from `results/` and diffs it against the committed
+`paper_artifacts/tab3_benchmark.tex`, row by row, failing with the offending
+cell named. It runs in CI on every push (`.github/workflows/reproduce.yml`) on a
+machine that has never seen the authors' filesystem — which is the case that
+matters, since the defect this guards against reproduced perfectly on the
+machine that produced it and not at all anywhere else.
+
+`requirements.txt` pins exact versions. Relaxing them is fine; re-run the test
+afterwards and it will tell you whether any published number moved.
+
 ### From raw inputs
 
 1. Obtain inputs (see `data/README.md`). Every location defaults to a path

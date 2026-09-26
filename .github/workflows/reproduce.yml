@@ -1,0 +1,39 @@
+name: reproduce
+
+# Rebuilds Table 3 from the committed result files on a machine that has never
+# seen the authors' filesystem. That is the whole point: the failure this
+# guards against was a package that reproduced perfectly on the machine that
+# wrote it and not at all anywhere else.
+#
+# Deliberately installs only the four libraries the table path needs, not the
+# full pipeline — if a future edit makes a generator import torch or rasterio,
+# this job should fail, because a reader with the committed JSONs should never
+# need a deep-learning stack to check a number.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  table3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install only what the table path needs
+        # make_tab3_benchmark.py imports scipy and the standard library, and
+        # nothing else. Installing exactly that is the assertion: if a future
+        # edit pulls numpy, sklearn or torch into this path, the job fails and
+        # the maintainer finds out before a reader does.
+        run: |
+          python -m pip install --upgrade pip
+          pip install "scipy==1.16.3"
+
+      - name: Regenerate Table 3 and diff it against the committed copy
+        run: python tests/test_reproduce_table3.py
