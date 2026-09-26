@@ -13,9 +13,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-RESULTS = ROOT / "pregunta_3_unidades_geomorfologicas/results"
-OUT_DIR = ROOT / "paper/figures"
+from paths import RESULTS
+from paths import FIGURES_DIR as OUT_DIR
 
 mpl.rcParams.update({
     "font.family": "serif",

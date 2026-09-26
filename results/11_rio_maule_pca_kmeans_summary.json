@@ -1,0 +1,111 @@
+{
+  "basin": "11_rio_maule",
+  "n_valid_pixels": 23229236,
+  "n_features": 17,
+  "feature_names": [
+    "convergence",
+    "curvature",
+    "dev",
+    "eastness",
+    "mrrtf",
+    "mrvbf",
+    "northness",
+    "openness_negative",
+    "openness_positive",
+    "slope",
+    "svf",
+    "tpi",
+    "tri",
+    "vrm",
+    "twi",
+    "hand",
+    "log1p_flow_accumulation_mfd"
+  ],
+  "pca_components": 10,
+  "pca_explained_variance_ratio": [
+    0.31575894355773926,
+    0.22029505670070648,
+    0.07500480860471725,
+    0.06208327040076256,
+    0.0591077096760273,
+    0.05886965990066528,
+    0.04966293275356293,
+    0.03819289058446884,
+    0.031601134687662125,
+    0.02447027526795864
+  ],
+  "pca_cumulative": [
+    0.31575894355773926,
+    0.5360540151596069,
+    0.6110588312149048,
+    0.6731420755386353,
+    0.7322497963905334,
+    0.7911194562911987,
+    0.8407824039459229,
+    0.8789752721786499,
+    0.9105764031410217,
+    0.9350466728210449
+  ],
+  "runs": [
+    {
+      "k": 5,
+      "fit_seconds": 1.708674443012569,
+      "silhouette_subsample": 0.14954693615436554,
+      "silhouette_subsample_size": 50000,
+      "inertia": 211878176.0,
+      "cluster_counts": [
+        3641790,
+        6117037,
+        4288399,
+        5437276,
+        3744734
+      ],
+      "raster": "11_rio_maule_kmeans_K05.tif"
+    },
+    {
+      "k": 10,
+      "fit_seconds": 5.306454830017174,
+      "silhouette_subsample": 0.1524764895439148,
+      "silhouette_subsample_size": 50000,
+      "inertia": 159389104.0,
+      "cluster_counts": [
+        2761238,
+        1426149,
+        1560542,
+        3271446,
+        2779415,
+        3901808,
+        1519445,
+        1510919,
+        2261663,
+        2236611
+      ],
+      "raster": "11_rio_maule_kmeans_K10.tif"
+    },
+    {
+      "k": 15,
+      "fit_seconds": 1.5418291640235111,
+      "silhouette_subsample": 0.14622554183006287,
+      "silhouette_subsample_size": 50000,
+      "inertia": 141510960.0,
+      "cluster_counts": [
+        2858334,
+        1875907,
+        1768576,
+        1604872,
+        1202360,
+        1589813,
+        372496,
+        1153136,
+        1085161,
+        873874,
+        2324002,
+        1804593,
+        1439652,
+        1791393,
+        1485067
+      ],
+      "raster": "11_rio_maule_kmeans_K15.tif"
+    }
+  ]
+}

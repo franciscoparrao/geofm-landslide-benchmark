@@ -18,10 +18,12 @@ fold-level paired *t*-inference.
 ```
 src/                      benchmark pipeline
   terramind_linprobe.py   cross-FM linear probe (--encoder terramind_v1_tiny | prithvi-300m,
-                          --cv spatial, --init pretrained|random, --modalities DEM S2L2A)
+                          --cv spatial, --init pretrained|random, --modalities DEM S2L2A,
+                          --folds N, --splitter group|stratified-group, --encode-only)
   point_probes.py         point-probe controls (SPEC / A+context / A+full context),
                           constrained-negative sensitivity (--negatives constrained),
-                          within-environment FM re-encoding (--with-fms all|terramind)
+                          within-environment FM re-encoding (--with-fms all|terramind),
+                          --folds N / --splitter as above
   pre_post_event_test.py  pre-/post-event composite test of the scar caveat (Huasco):
                           a 2016 composite predates the 2017+2020 events, so swapping
                           only the composite isolates post-event signal
@@ -29,7 +31,9 @@ src/                      benchmark pipeline
   inventory_temporal_analysis.py  trigger/temporal composition of the inventories
   pca_kmeans_baseline.py, umap_hdbscan.py, select_k.py,
   bootstrap_stability.py, compare_basins.py   unsupervised characterization
-paper_artifacts/          table (make_tab*.py) and figure (make_fig*.py) generators,
+paper_artifacts/          table (make_tab*.py), figure (make_fig*.py) and
+                          supplementary fold-ladder (make_fold_ladder.py) generators;
+                          paths.py resolves input/output locations,
                           Sentinel-2 L2A composite builder (download_s2_composite.py:
                           --year / --months / --harmonize for season-matched,
                           radiometrically harmonized composites)
@@ -56,8 +60,28 @@ TerraMind v1-tiny encodes a basin in about one minute.
 
 ## Reproducing the paper
 
-1. Obtain inputs (see `data/README.md`) and edit the paths at the top of
-   `src/config.py` and `src/terramind_linprobe.py`.
+### Tables and figures, without re-running anything
+
+`results/` ships the per-fold result files the paper reports (121 JSON, under
+1 MB), so every table and figure regenerates offline, with no imagery download,
+no GPU and no model weights:
+
+```bash
+GEOFM_RESULTS_DIR=results GEOFM_TABLES_DIR=out \
+  python paper_artifacts/make_tab3_benchmark.py
+```
+
+This is the fastest way to check a number in the manuscript against its source.
+The heavy artifacts — patch memmaps, embedding caches, composites and
+susceptibility rasters — are not versioned here; the steps below rebuild them
+from the raw inputs.
+
+### From raw inputs
+
+1. Obtain inputs (see `data/README.md`). Every location defaults to a path
+   inside this package, so placing or symlinking the inputs under `data/` needs
+   no code edits; alternatively point the environment variables in
+   `data/README.md` at trees held elsewhere.
 2. Build the feature stacks: `python src/build_stack.py --basin 06_rio_huasco`
    (repeat per basin).
 3. Build the Sentinel-2 composites:
@@ -88,9 +112,36 @@ TerraMind v1-tiny encodes a basin in about one minute.
    acquisitions share a radiometric scale; compositing across that boundary
    without it produces a spurious brightness difference between years.
 7. Regenerate tables and figures: run the `paper_artifacts/make_*.py` scripts.
+8. Supplementary fold-count ladder. The primary inference uses 5 spatial folds
+   with `GroupKFold`; the supplement reports a 10-fold variant, and a 5-fold
+   `StratifiedGroupKFold` rung in between so that the change of splitter and
+   the change of fold count are not confounded. Both are post-hoc.
+   ```bash
+   # bridge rung (splitter only) and variant rung (splitter + fold count)
+   python src/terramind_linprobe.py --basin 06_rio_huasco --cv spatial \
+       --splitter stratified-group --folds 5
+   python src/terramind_linprobe.py --basin 06_rio_huasco --cv spatial \
+       --splitter stratified-group --folds 10
+   python paper_artifacts/make_fold_ladder.py     # -> fold_ladder.md
+   # supplementary tables read the variant through an env var
+   TABLE_VARIANT=_sgkf_k10 python paper_artifacts/make_tab3_benchmark.py
+   ```
+   `--splitter stratified-group` is required at 10 folds: Huasco's events
+   concentrate in few 10 km blocks, so plain `GroupKFold` yields a
+   positive-free test fold and an undefined AUC. Results carry a `_sgkf`
+   and/or `_k<folds>` suffix, so no variant can overwrite the primary run.
+   `make_fold_ladder.py` also reports how much of the narrowing at 10 folds is
+   the mechanical `t(df)/sqrt(n)` factor rather than added information.
 
 All seeds are fixed (42; per-fold seeds 42+fold). Outputs are standardized
 JSON files per (basin, encoder, initialization) cell.
+
+Patch embeddings are cached under `results/_embcache/`, keyed by a fingerprint
+of the sampling parameters and the sampled coordinates. A re-run that changes
+only the cross-validation scheme reuses them; anything that moves the points
+invalidates the cache and re-encodes. Use `--encode-only` to populate the cache
+without running cross-validation. This matters because Prithvi-EO-2.0-300M
+takes hours per basin on CPU.
 
 ## Extending to another foundation model
 

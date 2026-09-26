@@ -1,0 +1,111 @@
+{
+  "basin": "06_rio_huasco",
+  "n_valid_pixels": 10851905,
+  "n_features": 17,
+  "feature_names": [
+    "convergence",
+    "curvature",
+    "dev",
+    "eastness",
+    "mrrtf",
+    "mrvbf",
+    "northness",
+    "openness_negative",
+    "openness_positive",
+    "slope",
+    "svf",
+    "tpi",
+    "tri",
+    "vrm",
+    "twi",
+    "hand",
+    "log1p_flow_accumulation_mfd"
+  ],
+  "pca_components": 10,
+  "pca_explained_variance_ratio": [
+    0.2782646715641022,
+    0.22807829082012177,
+    0.0808357298374176,
+    0.06266068667173386,
+    0.05926618352532387,
+    0.05883088707923889,
+    0.04857073724269867,
+    0.046228233724832535,
+    0.03349471092224121,
+    0.03204641491174698
+  ],
+  "pca_cumulative": [
+    0.2782646715641022,
+    0.5063429474830627,
+    0.5871787071228027,
+    0.6498394012451172,
+    0.7091056108474731,
+    0.7679364681243896,
+    0.8165072202682495,
+    0.8627354502677917,
+    0.896230161190033,
+    0.9282765984535217
+  ],
+  "runs": [
+    {
+      "k": 5,
+      "fit_seconds": 0.6602723840042017,
+      "silhouette_subsample": 0.16536734998226166,
+      "silhouette_subsample_size": 50000,
+      "inertia": 103650856.0,
+      "cluster_counts": [
+        3275181,
+        3476465,
+        837788,
+        506682,
+        2755789
+      ],
+      "raster": "06_rio_huasco_kmeans_K05.tif"
+    },
+    {
+      "k": 10,
+      "fit_seconds": 1.039017679002427,
+      "silhouette_subsample": 0.1334078162908554,
+      "silhouette_subsample_size": 50000,
+      "inertia": 77450752.0,
+      "cluster_counts": [
+        2146292,
+        1623143,
+        1730041,
+        433648,
+        1722116,
+        80400,
+        510073,
+        300247,
+        1453063,
+        852882
+      ],
+      "raster": "06_rio_huasco_kmeans_K10.tif"
+    },
+    {
+      "k": 15,
+      "fit_seconds": 1.236493969001458,
+      "silhouette_subsample": 0.15596988797187805,
+      "silhouette_subsample_size": 50000,
+      "inertia": 59743836.0,
+      "cluster_counts": [
+        250972,
+        1329364,
+        1137053,
+        825408,
+        641699,
+        296520,
+        659717,
+        79861,
+        1239550,
+        520158,
+        18437,
+        1308894,
+        1172774,
+        1242730,
+        128768
+      ],
+      "raster": "06_rio_huasco_kmeans_K15.tif"
+    }
+  ]
+}

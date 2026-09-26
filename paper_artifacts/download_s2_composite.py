@@ -33,11 +33,9 @@ import stackstac
 import xarray as xr
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-POSTDOC = Path("/mnt/kingston/proyectos/postdoc/papers/paper1_susceptibilidad")
-POLY_DIR = POSTDOC / "basin_polygons"
-DEM_DIR_BASE = POSTDOC / "factors"
-OUT_DIR = ROOT / "paper/data/s2_composites"
+from paths import BASIN_POLY_DIR as POLY_DIR
+from paths import BASIN_DATA_DIR as DEM_DIR_BASE
+from paths import S2_COMPOSITE_DIR as OUT_DIR
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 STAC_URL = "https://planetarycomputer.microsoft.com/api/stac/v1"

@@ -1,0 +1,111 @@
+{
+  "basin": "13_rio_bueno",
+  "n_valid_pixels": 15959075,
+  "n_features": 17,
+  "feature_names": [
+    "convergence",
+    "curvature",
+    "dev",
+    "eastness",
+    "mrrtf",
+    "mrvbf",
+    "northness",
+    "openness_negative",
+    "openness_positive",
+    "slope",
+    "svf",
+    "tpi",
+    "tri",
+    "vrm",
+    "twi",
+    "hand",
+    "log1p_flow_accumulation_mfd"
+  ],
+  "pca_components": 10,
+  "pca_explained_variance_ratio": [
+    0.30750301480293274,
+    0.2316465973854065,
+    0.07632174342870712,
+    0.06183426082134247,
+    0.05990184471011162,
+    0.05724436789751053,
+    0.045451343059539795,
+    0.034496452659368515,
+    0.033410102128982544,
+    0.024898137897253036
+  ],
+  "pca_cumulative": [
+    0.30750301480293274,
+    0.5391496419906616,
+    0.615471363067627,
+    0.6773056387901306,
+    0.7372074723243713,
+    0.7944518327713013,
+    0.8399031758308411,
+    0.8743996024131775,
+    0.9078097343444824,
+    0.9327078461647034
+  ],
+  "runs": [
+    {
+      "k": 5,
+      "fit_seconds": 5.6953304130001925,
+      "silhouette_subsample": 0.17831076681613922,
+      "silhouette_subsample_size": 50000,
+      "inertia": 135983440.0,
+      "cluster_counts": [
+        4383959,
+        4118957,
+        2233583,
+        3116439,
+        2106137
+      ],
+      "raster": "13_rio_bueno_kmeans_K05.tif"
+    },
+    {
+      "k": 10,
+      "fit_seconds": 2.3030115090004983,
+      "silhouette_subsample": 0.13504895567893982,
+      "silhouette_subsample_size": 50000,
+      "inertia": 111020672.0,
+      "cluster_counts": [
+        1865740,
+        2006807,
+        1271993,
+        1672504,
+        996796,
+        890796,
+        1105063,
+        1710290,
+        1789090,
+        2649996
+      ],
+      "raster": "13_rio_bueno_kmeans_K10.tif"
+    },
+    {
+      "k": 15,
+      "fit_seconds": 5.3881255719970795,
+      "silhouette_subsample": 0.13234952092170715,
+      "silhouette_subsample_size": 50000,
+      "inertia": 88782976.0,
+      "cluster_counts": [
+        1405452,
+        1603234,
+        439495,
+        1280569,
+        870237,
+        1019174,
+        882066,
+        1207527,
+        1621538,
+        1259681,
+        1349548,
+        1427699,
+        845317,
+        737288,
+        10250
+      ],
+      "raster": "13_rio_bueno_kmeans_K15.tif"
+    }
+  ]
+}

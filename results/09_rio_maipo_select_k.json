@@ -1,0 +1,195 @@
+{
+  "basin": "09_rio_maipo",
+  "rows": [
+    {
+      "k": 2,
+      "kmeans_fit_seconds": 7.116460338991601,
+      "silhouette": 0.27868402004241943,
+      "davies_bouldin": 1.515021292921587,
+      "calinski_harabasz": 15708.72871877525,
+      "inertia": 203939248.0,
+      "gmm_bic": 1340304.5270473561,
+      "gmm_fit_seconds": 0.4460607230430469
+    },
+    {
+      "k": 3,
+      "kmeans_fit_seconds": 1.0710036709788255,
+      "silhouette": 0.2382238805294037,
+      "davies_bouldin": 1.5125880019050761,
+      "calinski_harabasz": 12608.166870720257,
+      "inertia": 177031680.0,
+      "gmm_bic": 1413115.9899804401,
+      "gmm_fit_seconds": 0.44191290001617745
+    },
+    {
+      "k": 4,
+      "kmeans_fit_seconds": 2.117356906994246,
+      "silhouette": 0.22079183161258698,
+      "davies_bouldin": 1.5193655597962938,
+      "calinski_harabasz": 11759.04068892877,
+      "inertia": 156002144.0,
+      "gmm_bic": 1245177.7123129382,
+      "gmm_fit_seconds": 0.4455652459873818
+    },
+    {
+      "k": 5,
+      "kmeans_fit_seconds": 2.0356535970349796,
+      "silhouette": 0.19119882583618164,
+      "davies_bouldin": 1.5609028354406462,
+      "calinski_harabasz": 10504.782086922773,
+      "inertia": 144263776.0,
+      "gmm_bic": 1204814.2599323012,
+      "gmm_fit_seconds": 0.9832636340288445
+    },
+    {
+      "k": 6,
+      "kmeans_fit_seconds": 3.2874670709716156,
+      "silhouette": 0.18503616750240326,
+      "davies_bouldin": 1.4743211534229905,
+      "calinski_harabasz": 9581.464494527461,
+      "inertia": 135376448.0,
+      "gmm_bic": 1184903.306941313,
+      "gmm_fit_seconds": 0.470910609990824
+    },
+    {
+      "k": 7,
+      "kmeans_fit_seconds": 2.2104829879826866,
+      "silhouette": 0.1614614725112915,
+      "davies_bouldin": 1.5995863575703217,
+      "calinski_harabasz": 8626.34166952825,
+      "inertia": 130347704.0,
+      "gmm_bic": 1165485.2128370435,
+      "gmm_fit_seconds": 0.5813170890323818
+    },
+    {
+      "k": 8,
+      "kmeans_fit_seconds": 2.6453246980090626,
+      "silhouette": 0.169302299618721,
+      "davies_bouldin": 1.5768126990780753,
+      "calinski_harabasz": 7743.5740261264855,
+      "inertia": 127031264.0,
+      "gmm_bic": 1148135.4475901958,
+      "gmm_fit_seconds": 0.630673427018337
+    },
+    {
+      "k": 9,
+      "kmeans_fit_seconds": 2.762713106989395,
+      "silhouette": 0.15698279440402985,
+      "davies_bouldin": 1.6196799334970364,
+      "calinski_harabasz": 7193.937275807793,
+      "inertia": 122974248.0,
+      "gmm_bic": 1130834.7012032112,
+      "gmm_fit_seconds": 1.7871458539739251
+    },
+    {
+      "k": 10,
+      "kmeans_fit_seconds": 3.802724321023561,
+      "silhouette": 0.1735205203294754,
+      "davies_bouldin": 1.4531636817672393,
+      "calinski_harabasz": 7816.124515070981,
+      "inertia": 109603464.0,
+      "gmm_bic": 1122097.0918706702,
+      "gmm_fit_seconds": 1.4255655970191583
+    },
+    {
+      "k": 11,
+      "kmeans_fit_seconds": 2.7586545890080743,
+      "silhouette": 0.16372106969356537,
+      "davies_bouldin": 1.4876291612112686,
+      "calinski_harabasz": 7275.981818577609,
+      "inertia": 107029256.0,
+      "gmm_bic": 1095533.2114810003,
+      "gmm_fit_seconds": 1.1067505230312236
+    },
+    {
+      "k": 12,
+      "kmeans_fit_seconds": 2.081337290001102,
+      "silhouette": 0.15837357938289642,
+      "davies_bouldin": 1.5955096654582837,
+      "calinski_harabasz": 6776.639283979948,
+      "inertia": 105448704.0,
+      "gmm_bic": 1100504.3843445042,
+      "gmm_fit_seconds": 0.9922331990092061
+    },
+    {
+      "k": 13,
+      "kmeans_fit_seconds": 1.9940609619952738,
+      "silhouette": 0.15132378041744232,
+      "davies_bouldin": 1.5257309064895992,
+      "calinski_harabasz": 6530.456494082601,
+      "inertia": 102285192.0,
+      "gmm_bic": 1067615.6405209964,
+      "gmm_fit_seconds": 2.529249113984406
+    },
+    {
+      "k": 14,
+      "kmeans_fit_seconds": 1.3833051389665343,
+      "silhouette": 0.14795660972595215,
+      "davies_bouldin": 1.630080207982494,
+      "calinski_harabasz": 6095.2960129531675,
+      "inertia": 101585624.0,
+      "gmm_bic": 1043283.1672968537,
+      "gmm_fit_seconds": 4.438925869006198
+    },
+    {
+      "k": 15,
+      "kmeans_fit_seconds": 4.611985920055304,
+      "silhouette": 0.1490112543106079,
+      "davies_bouldin": 1.584454482433507,
+      "calinski_harabasz": 5973.06039022572,
+      "inertia": 98377304.0,
+      "gmm_bic": 1066911.9291190978,
+      "gmm_fit_seconds": 2.948359571979381
+    },
+    {
+      "k": 16,
+      "kmeans_fit_seconds": 4.017811339988839,
+      "silhouette": 0.1557232290506363,
+      "davies_bouldin": 1.5232023351339063,
+      "calinski_harabasz": 5965.875335886196,
+      "inertia": 94198552.0,
+      "gmm_bic": 1035602.4699635587,
+      "gmm_fit_seconds": 2.1323383699636906
+    },
+    {
+      "k": 17,
+      "kmeans_fit_seconds": 1.9276887119631283,
+      "silhouette": 0.15241438150405884,
+      "davies_bouldin": 1.5573941101145914,
+      "calinski_harabasz": 5696.229268291043,
+      "inertia": 92842624.0,
+      "gmm_bic": 1019366.5009508418,
+      "gmm_fit_seconds": 4.361527471977752
+    },
+    {
+      "k": 18,
+      "kmeans_fit_seconds": 3.36064378998708,
+      "silhouette": 0.15042811632156372,
+      "davies_bouldin": 1.5715319427232564,
+      "calinski_harabasz": 5483.325645889647,
+      "inertia": 91390624.0,
+      "gmm_bic": 1015752.2207808985,
+      "gmm_fit_seconds": 3.1896940110018477
+    },
+    {
+      "k": 19,
+      "kmeans_fit_seconds": 2.272640126000624,
+      "silhouette": 0.15009495615959167,
+      "davies_bouldin": 1.5040126017037094,
+      "calinski_harabasz": 5404.956972177869,
+      "inertia": 89015208.0,
+      "gmm_bic": 1015491.2502423027,
+      "gmm_fit_seconds": 3.137772704998497
+    },
+    {
+      "k": 20,
+      "kmeans_fit_seconds": 2.89024379698094,
+      "silhouette": 0.14238061010837555,
+      "davies_bouldin": 1.602372796298432,
+      "calinski_harabasz": 5175.704802728467,
+      "inertia": 88443472.0,
+      "gmm_bic": 1019250.9706216757,
+      "gmm_fit_seconds": 2.7598105190554634
+    }
+  ]
+}

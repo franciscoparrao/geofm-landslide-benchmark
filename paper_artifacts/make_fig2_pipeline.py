@@ -24,8 +24,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-OUT_DIR = ROOT / "paper/figures"
+from paths import FIGURES_DIR as OUT_DIR
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 mpl.rcParams.update({

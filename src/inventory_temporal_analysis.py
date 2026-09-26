@@ -10,15 +10,8 @@ from __future__ import annotations
 import csv
 import json
 from collections import Counter
-from pathlib import Path
 
-INVENTORY_BASE = Path(
-    "/mnt/kingston/proyectos/postdoc/papers/paper1_susceptibilidad/basin_inventory"
-)
-ML_DATASET_BASE = Path(
-    "/mnt/kingston/proyectos/postdoc/papers/paper1_susceptibilidad/ml_dataset"
-)
-RESULTS = Path(__file__).resolve().parent.parent / "results"
+from config import INVENTORY_BASE, ML_DATASET_BASE, RESULTS
 
 BASINS = ["06_rio_huasco", "09_rio_maipo", "11_rio_maule"]
 

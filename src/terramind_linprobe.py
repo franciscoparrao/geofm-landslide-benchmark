@@ -11,6 +11,7 @@ Same protocol as src/susceptibility_h33.py to make Δ-AUC comparable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import warnings
 from pathlib import Path
@@ -25,19 +26,15 @@ import torch
 from rasterio.windows import Window
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import average_precision_score, roc_auc_score
-from sklearn.model_selection import GroupKFold, StratifiedKFold
+from sklearn.model_selection import (
+    GroupKFold, StratifiedGroupKFold, StratifiedKFold,
+)
 
-from config import BASINS, DEFAULT_BASIN, RESULTS, basin_dir
+from config import (
+    BASINS, DEFAULT_BASIN, INVENTORY_BASE, ML_DATASET_BASE, PRITHVI_PATH,
+    RESULTS, S2_COMPOSITE_BASE, basin_dir,
+)
 
-INVENTORY_BASE = Path(
-    "/mnt/kingston/proyectos/postdoc/papers/paper1_susceptibilidad/basin_inventory"
-)
-ML_DATASET_BASE = Path(
-    "/mnt/kingston/proyectos/postdoc/papers/paper1_susceptibilidad/ml_dataset"
-)
-S2_COMPOSITE_BASE = Path(
-    "/home/franciscoparrao/proyectos/no_supervisado_superficie/paper/data/s2_composites"
-)
 PATCH_SIZE = 224
 NEG_RATIO = 5
 BUFFER_PX = PATCH_SIZE // 2  # 112 px = 3360 m, prevents patch-content leak
@@ -55,7 +52,7 @@ TERRAMIND_EMBED_DIM = 192
 
 PRITHVI_NAME = "prithvi-300m"
 PRITHVI_EMBED_DIM = 1024
-DEFAULT_PRITHVI_PATH = "/root/models/prithvi-300m"
+DEFAULT_PRITHVI_PATH = PRITHVI_PATH
 
 # HLS band order Prithvi was pretrained on: Blue, Green, Red, NIR-narrow, SWIR1, SWIR2.
 # Mapping from our 12-band S2L2A composite (B01,B02,B03,B04,B05,B06,B07,B08,B8A,B09,B11,B12):
@@ -152,6 +149,55 @@ def extract_patches_s2(s2_src, rows, cols, size=PATCH_SIZE,
         out[i] = arr[sel].astype(np.float32) / scale
     out = np.where(np.isfinite(out), out, 0.0)
     return out
+
+
+def sample_negatives(dem_src, pos_rows, pos_cols, excluded, n_target, rng,
+                     size=PATCH_SIZE):
+    """Sample negatives inside the basin with patch completeness matched to positives.
+
+    The DEM codes out-of-basin as literal 0 (it declares no nodata value) and
+    patches are zero-padded past the raster edge, so negatives drawn from the
+    rectangular bounding box carry systematically more zeros in their patch than
+    the in-basin positives. A patch encoder reads that difference directly, while
+    the per-pixel baseline cannot -- an artefact favouring the FM pipelines.
+
+    Two constraints remove it: the candidate pixel must be inside the basin
+    (DEM != 0), and its patch zero-fraction must not exceed the 95th percentile
+    of the positives' patch zero-fraction. Returns (rows, cols, threshold).
+    """
+    dem = dem_src.read(1).astype(np.float32)
+    dem = np.where(np.isfinite(dem), dem, 0.0)
+    in_basin = dem != 0.0
+    height, width = dem.shape
+    half = size // 2
+
+    def patch_zero_frac(r, c):
+        r0, r1, c0, c1 = r - half, r + half, c - half, c + half
+        inside = dem[max(0, r0):min(height, r1), max(0, c0):min(width, c1)]
+        outside = size * size - inside.size
+        return (float((inside == 0.0).sum()) + outside) / (size * size)
+
+    pos_frac = np.array([patch_zero_frac(r, c) for r, c in zip(pos_rows, pos_cols)])
+    thr = float(np.percentile(pos_frac, 95))
+    print(f"[sampling] in-basin negatives, patch zero-fraction <= {thr:.4f} "
+          f"(p95 of positives; positives mean {pos_frac.mean():.4f})")
+
+    rows, cols = [], []
+    tries = 0
+    max_tries = 400 * n_target
+    while len(rows) < n_target and tries < max_tries:
+        tries += 1
+        r = int(rng.integers(half, height - half))
+        c = int(rng.integers(half, width - half))
+        if excluded[r * width + c] or not in_basin[r, c]:
+            continue
+        if patch_zero_frac(r, c) > thr:
+            continue
+        rows.append(r); cols.append(c)
+    if len(rows) < n_target:
+        print(f"[sampling] WARNING: only {len(rows)}/{n_target} negatives met the "
+              f"constraints after {tries} draws")
+    return np.array(rows), np.array(cols), thr
 
 
 def build_encoder(name, pretrained, modalities, prithvi_path=None):
@@ -254,6 +300,110 @@ def encode_patches(kind, model, embed_dim, dem_patches=None,
     raise ValueError(f"Unknown encoder kind: {kind}")
 
 
+def encode_streaming(kind, model, embed_dim, rows, cols, dem_src=None,
+                     s2_src=None, s2_band_indices=None, s2_scale=10000.0,
+                     norm_stats=None, chunk=256):
+    """Extract and encode patches in chunks, keeping only the embeddings.
+
+    Materialising every patch first costs bands x 224^2 x 4 bytes per point --
+    5 GB of Sentinel-2 patches for a 2000-point basin, which is what made the
+    multimodal and Prithvi runs die on the larger basins. Streaming caps the
+    peak at `chunk` points regardless of dataset size.
+    """
+    n = len(rows)
+    out = np.zeros((n, embed_dim), dtype=np.float32)
+    t0 = perf_counter()
+    for i in range(0, n, chunk):
+        sl = slice(i, min(i + chunk, n))
+        r, c = rows[sl], cols[sl]
+        dem_p = extract_patches(dem_src, r, c) if dem_src is not None else None
+        s2_p = None
+        if s2_src is not None:
+            s2_p = extract_patches_s2(s2_src, r, c,
+                                      band_indices=s2_band_indices, scale=s2_scale)
+        if kind == "prithvi":
+            out[sl] = _encode_prithvi(model, s2_p, embed_dim, BATCH_SIZE,
+                                      norm_stats, use_bf16=False)
+        else:
+            out[sl] = _encode_terramind(model, dem_p, s2_p, embed_dim, BATCH_SIZE)
+        del dem_p, s2_p
+        print(f"  [stream] {min(i + chunk, n)}/{n}  elapsed={perf_counter() - t0:.0f}s",
+              flush=True)
+    return out
+
+
+def lookup_pixel_features(X_all, valid_idx, flat_positions):
+    """Gather the per-pixel feature rows for the sampled points.
+
+    valid_idx holds one entry per valid pixel of the basin -- 23 million for
+    Maule -- so the previous {int(idx): row} dict cost roughly 2.5 GB of Python
+    objects and stayed alive through the encoding. That, on top of the 1.6 GB
+    feature array, is what made the larger basins die under the OOM killer with
+    no traceback. searchsorted performs the identical lookup on the sorted index
+    at no memory cost.
+
+    Returns (features, valid_mask); rows without a valid pixel stay NaN.
+    """
+    order = None
+    if valid_idx.size > 1 and not np.all(np.diff(valid_idx) > 0):
+        order = np.argsort(valid_idx)
+    keys = valid_idx if order is None else valid_idx[order]
+
+    pos = np.clip(np.searchsorted(keys, flat_positions), 0, len(keys) - 1)
+    valid_mask = keys[pos] == flat_positions
+    rows_in_X = pos if order is None else order[pos]
+
+    feats = np.full((len(flat_positions), X_all.shape[1]), np.nan, np.float32)
+    feats[valid_mask] = X_all[rows_in_X[valid_mask]]
+    return feats, valid_mask
+
+
+def embedding_cache_path(basin, encoder_slug, init_mode, modalities):
+    return (RESULTS / "_embcache" /
+            f"{basin}_{encoder_slug}_{init_mode}_"
+            f"{'+'.join(sorted(modalities)).lower()}.npz")
+
+
+def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
+    """Identify the exact point set an embedding matrix was computed for.
+
+    Embeddings do not depend on the number of CV folds, so a run that only
+    changes N_FOLDS can reuse them -- but only if the sampled points are
+    identical. Anything that moves the points (a different seed, ratio, patch
+    size, or a change to sample_negatives) must invalidate the cache, so the
+    fingerprint covers both the sampling parameters and the resulting
+    coordinates themselves.
+    """
+    payload = json.dumps({
+        "encoder": encoder_name, "init": init_mode,
+        "modalities": sorted(modalities),
+        "patch_size": PATCH_SIZE, "neg_ratio": NEG_RATIO,
+        "buffer_px": BUFFER_PX, "seed": SEED,
+        "n_pos": int(y.sum()), "n_neg": int((y == 0).sum()),
+    }, sort_keys=True).encode()
+    h = hashlib.md5(payload)
+    h.update(np.ascontiguousarray(rows, dtype=np.int64).tobytes())
+    h.update(np.ascontiguousarray(cols, dtype=np.int64).tobytes())
+    return h.hexdigest()
+
+
+def load_cached_embeddings(path, fingerprint):
+    if not path.exists():
+        return None
+    with np.load(path, allow_pickle=False) as npz:
+        if str(npz["fingerprint"]) != fingerprint:
+            print(f"[cache] {path.name} exists but fingerprint differs -- re-encoding")
+            return None
+        return npz["embeddings"].astype(np.float32)
+
+
+def save_cached_embeddings(path, fingerprint, embeddings):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(path, embeddings=embeddings,
+                        fingerprint=np.array(fingerprint))
+    print(f"[cache] wrote {path.name}")
+
+
 def auc_with_paired_bootstrap(y, sA, sB, rng, n=N_BOOTSTRAP):
     n_obs = y.size
     boot_deltas_roc = np.empty(n)
@@ -298,6 +448,27 @@ def main() -> None:
         help="Path to the local Prithvi-EO-2.0-300M model directory.",
     )
     parser.add_argument(
+        "--folds", type=int, default=N_FOLDS,
+        help=f"Number of CV folds. Default {N_FOLDS} (the primary analysis). "
+             "Any other value writes to a _k<folds> file so the primary "
+             "results are never overwritten.",
+    )
+    parser.add_argument(
+        "--splitter", choices=("group", "stratified-group"), default="group",
+        help="Spatial-CV splitter. 'group' (GroupKFold) is the primary "
+             "analysis. 'stratified-group' keeps blocks intact but balances "
+             "the classes across folds, which is required at high fold counts: "
+             "Huasco's events concentrate in few blocks, so plain GroupKFold "
+             "yields a positive-free test fold and an undefined AUC at k=10. "
+             "Writes to a _sgkf file so the primary results are preserved.",
+    )
+    parser.add_argument(
+        "--encode-only", action="store_true",
+        help="Populate the embedding cache and stop before cross-validation. "
+             "Embeddings do not depend on the fold count or the splitter, so "
+             "this lets the expensive work start before those are settled.",
+    )
+    parser.add_argument(
         "--modalities", nargs="+", default=None,
         choices=["DEM", "S2L2A"],
         help="Input modalities. Default: DEM for TerraMind, S2L2A for Prithvi. "
@@ -308,6 +479,9 @@ def main() -> None:
     cv_mode = args.cv
     init_mode = args.init
     encoder_name = args.encoder
+    n_folds = args.folds
+    if n_folds < 2:
+        raise SystemExit("--folds must be at least 2")
 
     if args.modalities is None:
         modalities = ["S2L2A"] if encoder_name == PRITHVI_NAME else ["DEM"]
@@ -319,6 +493,7 @@ def main() -> None:
             "use --modalities S2L2A (DEM is not natively supported)."
         )
 
+    encoder_slug = "terramind" if encoder_name == TERRAMIND_NAME else encoder_name
     use_s2 = "S2L2A" in modalities
     if use_s2:
         s2_path = S2_COMPOSITE_BASE / f"{basin}_s2l2a_2023.tif"
@@ -355,14 +530,9 @@ def main() -> None:
                     excluded[r2 * width + c2] = True
 
     n_neg_target = NEG_RATIO * n_pos
-    half = PATCH_SIZE // 2
-    neg_rows = []; neg_cols = []
-    while len(neg_rows) < n_neg_target:
-        r = int(rng.integers(half, height - half))
-        c = int(rng.integers(half, width - half))
-        if not excluded[r * width + c]:
-            neg_rows.append(r); neg_cols.append(c)
-    neg_rows = np.array(neg_rows); neg_cols = np.array(neg_cols)
+    neg_rows, neg_cols, _zero_thr = sample_negatives(
+        dem_src, pos_rows, pos_cols, excluded, n_neg_target, rng
+    )
     n_neg = neg_rows.size
     print(f"[fase2.0] negatives_sampled={n_neg}")
 
@@ -373,19 +543,18 @@ def main() -> None:
     stack_path = RESULTS / f"{basin}_stack.npz"
     print(f"[fase2.0] loading pixel features from {stack_path.name}")
     with np.load(stack_path, allow_pickle=False) as npz:
-        X_all = npz["X"].astype(np.float32)
+        # Already float32 on disk, so copy=False avoids duplicating 1.6 GB on
+        # the larger basins for no gain.
+        X_all = npz["X"].astype(np.float32, copy=False)
         valid_idx = npz["valid_idx"]
         feature_names_pixel = list(npz["feature_names"])
-    flat_to_row = {int(idx): i for i, idx in enumerate(valid_idx)}
-    flat_positions = all_rows * width + all_cols
-    pixel_features = np.full(
-        (len(all_rows), X_all.shape[1]), np.nan, dtype=np.float32
+    flat_positions = all_rows.astype(np.int64) * width + all_cols
+    pixel_features, valid_pixel_mask = lookup_pixel_features(
+        X_all, valid_idx, flat_positions
     )
-    valid_pixel_mask = np.zeros(len(all_rows), dtype=bool)
-    for i, fp in enumerate(flat_positions):
-        if int(fp) in flat_to_row:
-            pixel_features[i] = X_all[flat_to_row[int(fp)]]
-            valid_pixel_mask[i] = True
+    # X_all is 1.6 GB for Maule and is not needed past this point; holding it
+    # through the encoding is what pushed the larger basins into the OOM killer.
+    del X_all, valid_idx
     n_valid_pixel = int(valid_pixel_mask.sum())
     print(f"[fase2.0] pixel_features valid for {n_valid_pixel}/{len(all_rows)} points")
     if n_valid_pixel < len(all_rows):
@@ -397,59 +566,57 @@ def main() -> None:
         print(f"[fase2.0] after pixel-validity filter: pos={n_pos} neg={n_neg}")
 
     needs_dem = encoder_name == TERRAMIND_NAME
-    dem_patches = None
+    s2_src = rasterio.open(s2_path) if use_s2 else None
     if needs_dem:
-        print(f"[fase2] extracting {len(all_rows)} DEM patches (size={PATCH_SIZE})")
-        t0 = perf_counter()
-        dem_patches = extract_patches(dem_src, all_rows, all_cols)
-        print(f"[fase2] DEM patches.shape={dem_patches.shape} in {perf_counter() - t0:.1f}s")
-        print(f"[fase2] elev range raw: min={dem_patches.min():.1f}m max={dem_patches.max():.1f}m mean={dem_patches.mean():.1f}m")
-
-    s2_patches = None
-    s2_hls_patches = None
+        print(f"[fase2] will stream {len(all_rows)} DEM patches (size={PATCH_SIZE})")
     if use_s2:
-        s2_src = rasterio.open(s2_path)
-        if encoder_name == TERRAMIND_NAME:
-            print(f"[fase2] extracting {len(all_rows)} S2L2A patches (12 bands) from {s2_path.name}")
-            t0 = perf_counter()
-            s2_patches = extract_patches_s2(s2_src, all_rows, all_cols,
-                                            band_indices=None, scale=10000.0)
-            print(f"[fase2] S2 patches.shape={s2_patches.shape} in {perf_counter() - t0:.1f}s")
-            print(f"[fase2] S2 reflectance range: min={s2_patches.min():.3f} max={s2_patches.max():.3f} mean={s2_patches.mean():.3f}")
-        else:  # prithvi: HLS-equivalent 6 bands, keep raw uint16 scale
-            print(f"[fase2] extracting {len(all_rows)} S2 HLS-equivalent patches (6 bands) from {s2_path.name}")
-            t0 = perf_counter()
-            s2_hls_patches = extract_patches_s2(
-                s2_src, all_rows, all_cols,
-                band_indices=PRITHVI_HLS_INDICES, scale=1.0,
-            )
-            print(f"[fase2] S2-HLS patches.shape={s2_hls_patches.shape} in {perf_counter() - t0:.1f}s")
-            print(f"[fase2] raw range: min={s2_hls_patches.min():.0f} max={s2_hls_patches.max():.0f} mean={s2_hls_patches.mean():.0f}")
+        which = "12-band S2L2A" if encoder_name == TERRAMIND_NAME else "6-band S2 HLS-equivalent"
+        print(f"[fase2] will stream {len(all_rows)} {which} patches from {s2_path.name}")
 
-    print(f"[fase2] loading {encoder_name}  init={init_mode}  modalities={modalities}")
-    pretrained = init_mode == "pretrained"
-    model, encoder_kind, embed_dim, norm_stats = build_encoder(
-        encoder_name, pretrained=pretrained, modalities=modalities,
-        prithvi_path=args.prithvi_path,
+    cache_path = embedding_cache_path(basin, encoder_slug, init_mode, modalities)
+    fingerprint = embedding_fingerprint(
+        encoder_name, init_mode, modalities, all_rows, all_cols, y
     )
-    if not pretrained:
-        torch.manual_seed(SEED)
-        for p in model.parameters():
-            if p.requires_grad and p.ndim >= 2:
-                torch.nn.init.xavier_uniform_(p)
-    model.eval()
-    n_params = sum(p.numel() for p in model.parameters())
-    print(f"[fase2] params={n_params:,}  embed_dim={embed_dim}  kind={encoder_kind}")
+    embeddings = load_cached_embeddings(cache_path, fingerprint)
+    if embeddings is not None:
+        print(f"[cache] reusing {cache_path.name} "
+              f"shape={embeddings.shape} (encoding skipped)")
+    else:
+        print(f"[fase2] loading {encoder_name}  init={init_mode}  modalities={modalities}")
+        pretrained = init_mode == "pretrained"
+        model, encoder_kind, embed_dim, norm_stats = build_encoder(
+            encoder_name, pretrained=pretrained, modalities=modalities,
+            prithvi_path=args.prithvi_path,
+        )
+        if not pretrained:
+            torch.manual_seed(SEED)
+            for p in model.parameters():
+                if p.requires_grad and p.ndim >= 2:
+                    torch.nn.init.xavier_uniform_(p)
+        model.eval()
+        n_params = sum(p.numel() for p in model.parameters())
+        print(f"[fase2] params={n_params:,}  embed_dim={embed_dim}  kind={encoder_kind}")
 
-    print(f"[fase2] encoding patches with batch_size={BATCH_SIZE}")
-    t0 = perf_counter()
-    embeddings = encode_patches(
-        encoder_kind, model, embed_dim,
-        dem_patches=dem_patches, s2_patches=s2_patches,
-        s2_hls_patches=s2_hls_patches, norm_stats=norm_stats,
-        batch_size=BATCH_SIZE,
-    )
-    print(f"[fase2] embeddings.shape={embeddings.shape} elapsed={perf_counter() - t0:.1f}s")
+        print(f"[fase2] encoding patches with batch_size={BATCH_SIZE}")
+        t0 = perf_counter()
+        embeddings = encode_streaming(
+            encoder_kind, model, embed_dim, all_rows, all_cols,
+            dem_src=dem_src if needs_dem else None,
+            s2_src=s2_src,
+            s2_band_indices=None if encoder_kind == "terramind" else PRITHVI_HLS_INDICES,
+            s2_scale=10000.0 if encoder_kind == "terramind" else 1.0,
+            norm_stats=norm_stats,
+        )
+        print(f"[fase2] embeddings.shape={embeddings.shape} elapsed={perf_counter() - t0:.1f}s")
+        save_cached_embeddings(cache_path, fingerprint, embeddings)
+
+    if args.encode_only:
+        print("[fase2] --encode-only: embeddings cached, stopping before CV")
+        return
+
+    # Defined here and not in the branch above: on a cache hit no encoder is
+    # built, so the dimension has to come from the embeddings themselves.
+    embed_dim = embeddings.shape[1]
 
     if cv_mode == "spatial":
         n_cols_blocks = (width + SPATIAL_BLOCK_PX - 1) // SPATIAL_BLOCK_PX
@@ -459,15 +626,29 @@ def main() -> None:
         neg_blocks = np.unique(block_id[y == 0])
         print(f"[fase2.0] spatial CV  block_size={SPATIAL_BLOCK_PX}px (~{SPATIAL_BLOCK_PX * 30 / 1000:.1f} km)")
         print(f"[fase2.0]   unique blocks: {len(unique_blocks)}  with pos: {len(pos_blocks)}  with neg: {len(neg_blocks)}")
-        cv_iter = GroupKFold(n_splits=N_FOLDS).split(embeddings, y, groups=block_id)
+        if len(unique_blocks) < n_folds:
+            raise SystemExit(
+                f"spatial CV needs at least {n_folds} blocks, basin has "
+                f"{len(unique_blocks)}"
+            )
+        if args.splitter == "group":
+            cv_iter = GroupKFold(n_splits=n_folds).split(embeddings, y, groups=block_id)
+        else:
+            cv_iter = StratifiedGroupKFold(n_splits=n_folds, shuffle=False).split(
+                embeddings, y, groups=block_id)
     else:
-        cv_iter = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=SEED).split(embeddings, y)
+        cv_iter = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=SEED).split(embeddings, y)
 
     fold_results = []
     sA_all = np.empty(len(y), dtype=np.float64)
     sB_all = np.empty(len(y), dtype=np.float64)
     for fi, (tr, te) in enumerate(cv_iter):
         t0 = perf_counter()
+        if len(np.unique(y[te])) < 2:
+            raise SystemExit(
+                f"fold {fi} test set is single-class ({int(y[te].sum())} positives "
+                f"of {len(te)}); AUC is undefined at {n_folds} folds for this basin"
+            )
         rfA = RandomForestClassifier(
             n_estimators=N_TREES, max_depth=None, min_samples_leaf=5,
             n_jobs=-1, random_state=SEED + fi, class_weight="balanced",
@@ -530,6 +711,7 @@ def main() -> None:
         "init_mode": init_mode, "modalities": modalities,
         "patch_size": PATCH_SIZE, "buffer_px": BUFFER_PX,
         "cv_mode": cv_mode, "spatial_block_px": SPATIAL_BLOCK_PX,
+        "n_folds": int(n_folds), "splitter": args.splitter,
         "n_pos": int(n_pos), "n_neg": int(n_neg),
         "embedding_dim": int(embeddings.shape[1]),
         "fold_results": fold_results,
@@ -542,14 +724,17 @@ def main() -> None:
         "delta_pr_mean": float(delta_prs.mean()),
         "delta_pr_ci_95": list(ci_pr),
     }
-    encoder_slug = "terramind" if encoder_name == TERRAMIND_NAME else encoder_name
     cv_suffix = "spatial" if cv_mode == "spatial" else "fair"
     init_suffix = "" if init_mode == "pretrained" else "_randinit"
     if encoder_name == TERRAMIND_NAME:
         modality_suffix = "" if modalities == ["DEM"] else "_" + "+".join(sorted(modalities)).lower()
     else:
         modality_suffix = ""  # Prithvi is S2-only, no need to disambiguate
-    out_json = RESULTS / f"{basin}_{encoder_slug}_linprobe_{cv_suffix}{init_suffix}{modality_suffix}.json"
+    # The 5-fold run is the primary analysis and owns the unsuffixed filename;
+    # any other fold count is a secondary variant and gets its own file.
+    folds_suffix = "" if n_folds == N_FOLDS else f"_k{n_folds}"
+    splitter_suffix = "" if args.splitter == "group" else "_sgkf"
+    out_json = RESULTS / f"{basin}_{encoder_slug}_linprobe_{cv_suffix}{init_suffix}{modality_suffix}{splitter_suffix}{folds_suffix}.json"
     out_json.write_text(json.dumps(summary, indent=2))
     print(f"[fase2] wrote {out_json.name}")
 

@@ -1,10 +1,24 @@
+# benchmark pipeline (src/)
 numpy>=2.4
+scipy>=1.16
 scikit-learn>=1.8
 rasterio>=1.4
-torch>=2.11
-terratorch>=1.2
-umap-learn>=0.5
-hdbscan>=0.8
 pyproj>=3.6
 h5py>=3.10
+torch>=2.11
+terratorch>=1.2
 huggingface_hub>=0.23
+
+# unsupervised characterization (src/pca_kmeans_baseline.py, umap_hdbscan.py)
+umap-learn>=0.5
+hdbscan>=0.8
+
+# tables and figures (paper_artifacts/make_*.py)
+matplotlib>=3.10
+
+# Sentinel-2 composite builder (paper_artifacts/download_s2_composite.py)
+geopandas>=0.14
+planetary-computer>=1.0
+pystac-client>=0.9
+stackstac>=0.5
+xarray>=2025.9

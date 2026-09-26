@@ -6,11 +6,17 @@ secondary pooled paired-bootstrap 95% CI (dagger), consistent with Table 3.
 from __future__ import annotations
 import json
 import math
+import os
 from pathlib import Path
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-RESULTS = ROOT / "pregunta_3_unidades_geomorfologicas/results"
-OUT_DIR = ROOT / "paper/tables"
+from scipy.stats import t as student_t
+
+# See make_tab3_benchmark.py: suffix of the result files to read, empty for the
+# primary 5-fold analysis.
+VARIANT = os.environ.get("TABLE_VARIANT", "")
+
+from paths import RESULTS
+from paths import TABLES_DIR as OUT_DIR
 
 BASINS = ["06_rio_huasco", "09_rio_maipo", "11_rio_maule"]
 SHORT = {"06_rio_huasco": "Huasco", "09_rio_maipo": "Maipo", "11_rio_maule": "Maule"}
@@ -26,14 +32,20 @@ def fmt_delta(mean, _std=None):
     return f"{mean:+.3f}"
 
 
-T_975_DF4 = 2.776  # two-sided 95% t quantile, df = 4
+_FOLD_COUNTS = set()
+
+
+def t_crit(n):
+    """Two-sided 95% t quantile for n folds, derived from the data."""
+    _FOLD_COUNTS.add(int(n))
+    return float(student_t.ppf(0.975, n - 1))
 
 
 def fold_tci(values):
     n = len(values)
     m = sum(values) / n
     sd = math.sqrt(sum((v - m) ** 2 for v in values) / (n - 1))
-    h = T_975_DF4 * sd / math.sqrt(n)
+    h = t_crit(n) * sd / math.sqrt(n)
     return m, m - h, m + h
 
 
@@ -48,11 +60,31 @@ def fmt_ci(ci_low, ci_high):
     return f"[{ci_low:+.3f}, {ci_high:+.3f}]{sig}"
 
 
+def fold_wording(n):
+    """Caption wording that follows the fold count actually in the data.
+
+    The captions used to hardcode "5-fold" and "df = 4"; pointed at a variant
+    they would have described df = 4 above intervals computed with df = 9.
+    """
+    return {"5-fold": f"{n}-fold",
+            "df $= 4$": f"df $= {n - 1}$",
+            "(df=4)": f"(df={n - 1})",
+            "df=4": f"df={n - 1}",
+            "five spatial folds": f"{n} spatial folds"}
+
+
+def apply_wording(text, n=None):
+    n = n or (max(_FOLD_COUNTS) if _FOLD_COUNTS else 5)
+    for old, new in fold_wording(n).items():
+        text = text.replace(old, new)
+    return text
+
+
 def main():
     rows = []
     for b in BASINS:
-        dem = json.loads((RESULTS / f"{b}_terramind_linprobe_spatial.json").read_text())
-        mm  = json.loads((RESULTS / f"{b}_terramind_linprobe_spatial_dem+s2l2a.json").read_text())
+        dem = json.loads((RESULTS / f"{b}_terramind_linprobe_spatial{VARIANT}.json").read_text())
+        mm  = json.loads((RESULTS / f"{b}_terramind_linprobe_spatial_dem+s2l2a{VARIANT}.json").read_text())
         rows.append({
             "basin": SHORT[b], "regime": REGIME[b],
             "a_roc":     fmt_mean_std(dem["A_roc_mean"], dem["A_roc_std"]),
@@ -92,7 +124,7 @@ def main():
             f"{r['d_mm_roc']} & {r['fci_mm_roc']} \\\\"
         )
     lines.extend([r"\bottomrule", r"\end{tabular}", r"\end{table*}", ""])
-    (OUT_DIR / "tab5_multimodal.tex").write_text("\n".join(lines))
+    (OUT_DIR / f"tab5_multimodal{VARIANT}.tex").write_text(apply_wording("\n".join(lines)))
     print(f"  wrote tab5_multimodal.tex")
 
     md_lines = [
@@ -109,7 +141,7 @@ def main():
             f"{md(r['d_mm_roc'])} | {md(r['fci_mm_roc'])} |"
         )
     md_lines.extend(["", "*: fold-level 95% t-CI (df=4) excludes zero. Pooled-bootstrap intervals for the same cells: see Table 3."])
-    (OUT_DIR / "tab5_multimodal.md").write_text("\n".join(md_lines))
+    (OUT_DIR / f"tab5_multimodal{VARIANT}.md").write_text(apply_wording("\n".join(md_lines)))
     print(f"  wrote tab5_multimodal.md")
 
 

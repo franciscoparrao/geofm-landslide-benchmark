@@ -9,11 +9,17 @@ because resampling five observations yields unreliable percentile intervals.
 from __future__ import annotations
 import json
 import math
+import os
 from pathlib import Path
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-RESULTS = ROOT / "pregunta_3_unidades_geomorfologicas/results"
-OUT_DIR = ROOT / "paper/tables"
+from scipy.stats import t as student_t
+
+# See make_tab3_benchmark.py: suffix of the result files to read, empty for the
+# primary 5-fold GroupKFold analysis.
+VARIANT = os.environ.get("TABLE_VARIANT", "")
+
+from paths import RESULTS
+from paths import TABLES_DIR as OUT_DIR
 
 BASINS = [("06_rio_huasco", "Huasco", "Semi-arid"),
           ("09_rio_maipo",  "Maipo",  "Mediterranean"),
@@ -25,16 +31,22 @@ FMS = [
     ("Prithvi-EO-2.0+S2",  "prithvi-300m", "s2"),
 ]
 
-T_975_DF4 = 2.776  # two-sided 95% t quantile, df = 4
+_FOLD_COUNTS = set()
+
+
+def t_crit(n):
+    """Two-sided 95% t quantile for n folds, derived from the data."""
+    _FOLD_COUNTS.add(int(n))
+    return float(student_t.ppf(0.975, n - 1))
 
 
 def load(basin, model, mod, init):
     init_s = "_randinit" if init == "rand" else ""
     if model == "terramind":
         mod_s = "" if mod == "dem" else "_dem+s2l2a"
-        path = RESULTS / f"{basin}_terramind_linprobe_spatial{init_s}{mod_s}.json"
+        path = RESULTS / f"{basin}_terramind_linprobe_spatial{init_s}{mod_s}{VARIANT}.json"
     else:
-        path = RESULTS / f"{basin}_prithvi-300m_linprobe_spatial{init_s}.json"
+        path = RESULTS / f"{basin}_prithvi-300m_linprobe_spatial{init_s}{VARIANT}.json"
     return json.loads(path.read_text())
 
 
@@ -42,7 +54,7 @@ def fold_tci(values):
     n = len(values)
     m = sum(values) / n
     sd = math.sqrt(sum((v - m) ** 2 for v in values) / (n - 1))
-    h = T_975_DF4 * sd / math.sqrt(n)
+    h = t_crit(n) * sd / math.sqrt(n)
     return m, m - h, m + h
 
 
@@ -54,6 +66,26 @@ def fmt_mtci(values, star="$^{*}$"):
     m, lo, hi = fold_tci(values)
     sig = star if not (lo <= 0 <= hi) else ""
     return f"{m:+.3f} [{lo:+.3f}, {hi:+.3f}]{sig}", (m, lo, hi)
+
+
+def fold_wording(n):
+    """Caption wording that follows the fold count actually in the data.
+
+    The captions used to hardcode "5-fold" and "df = 4"; pointed at a variant
+    they would have described df = 4 above intervals computed with df = 9.
+    """
+    return {"5-fold": f"{n}-fold",
+            "df $= 4$": f"df $= {n - 1}$",
+            "(df=4)": f"(df={n - 1})",
+            "df=4": f"df={n - 1}",
+            "five spatial folds": f"{n} spatial folds"}
+
+
+def apply_wording(text, n=None):
+    n = n or (max(_FOLD_COUNTS) if _FOLD_COUNTS else 5)
+    for old, new in fold_wording(n).items():
+        text = text.replace(old, new)
+    return text
 
 
 def main():
@@ -83,8 +115,8 @@ def main():
             )
         lines.append(r"\midrule" if b_slug != BASINS[-1][0] else r"\bottomrule")
     lines.extend([r"\end{tabular}", r"\end{table*}", ""])
-    (OUT_DIR / "tab4_ablation.tex").write_text("\n".join(lines))
-    print("  wrote tab4_ablation.tex")
+    (OUT_DIR / f"tab4_ablation{VARIANT}.tex").write_text(apply_wording("\n".join(lines)))
+    print(f"  wrote tab4_ablation{VARIANT}.tex")
 
     # Markdown version (cleaner: separate columns)
     md = ["# Table 4 — Cross-FM random-init ablation", "",
@@ -102,8 +134,8 @@ def main():
             md.append(f"| {b_name} | {regime} | {fm_name} | {s_p} | {s_r} | {s_g} |")
     md.append("\n*: fold-level paired 95% t-CI (df=4) excludes zero.")
     md.append("PT gap = ΔROC(pretrained) − ΔROC(random-init); CI on per-fold paired differences.")
-    (OUT_DIR / "tab4_ablation.md").write_text("\n".join(md))
-    print("  wrote tab4_ablation.md")
+    (OUT_DIR / f"tab4_ablation{VARIANT}.md").write_text(apply_wording("\n".join(md)))
+    print(f"  wrote tab4_ablation{VARIANT}.md")
 
 
 if __name__ == "__main__":

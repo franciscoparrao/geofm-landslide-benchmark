@@ -1,6 +1,6 @@
 """Table 7 — Constrained-negative sensitivity (hard-task variant).
 
-Reads results/{basin}_point_probes_constrained.json and reports AUC ROC of
+Reads results/{basin}_point_probes_constrained{VARIANT}.json and reports AUC ROC of
 A, spectral-point, and the context variants under negatives restricted to the
 positives' slope envelope, with fold-level paired t-intervals of the
 difference against A (StratifiedGroupKFold folds; internally paired).
@@ -8,11 +8,17 @@ difference against A (StratifiedGroupKFold folds; internally paired).
 from __future__ import annotations
 import json
 import math
+import os
 from pathlib import Path
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-RESULTS = ROOT / "pregunta_3_unidades_geomorfologicas/results"
-OUT_DIR = ROOT / "paper/tables"
+from scipy.stats import t as student_t
+
+# See make_tab3_benchmark.py: suffix of the result files to read, empty for the
+# primary 5-fold analysis.
+VARIANT = os.environ.get("TABLE_VARIANT", "")
+
+from paths import RESULTS
+from paths import TABLES_DIR as OUT_DIR
 
 BASINS = [("06_rio_huasco", "Huasco"),
           ("09_rio_maipo",  "Maipo"),
@@ -23,16 +29,23 @@ SETS = [("SPEC", "Spec.-point (8)"),
         ("SCTX", "Spec. + ctx (56)"),
         ("AFULL", "A + full ctx (175)"),
         ("TM_DEM_ENV", "TerraMind+DEM"),
-        ("TM_MM_ENV", "TerraMind+DEM+S2")]
+        ("TM_MM_ENV", "TerraMind+DEM+S2"),
+        ("PRITHVI_ENV", "Prithvi-EO-2.0+S2")]
 
-T_975_DF4 = 2.776
+_FOLD_COUNTS = set()
+
+
+def t_crit(n):
+    """Two-sided 95% t quantile for n folds, derived from the data."""
+    _FOLD_COUNTS.add(int(n))
+    return float(student_t.ppf(0.975, n - 1))
 
 
 def tci(vals):
     n = len(vals)
     m = sum(vals) / n
     sd = math.sqrt(sum((v - m) ** 2 for v in vals) / (n - 1))
-    h = T_975_DF4 * sd / math.sqrt(n)
+    h = t_crit(n) * sd / math.sqrt(n)
     return m, m - h, m + h
 
 
@@ -42,11 +55,31 @@ def fmt_delta(deltas, star="$^{*}$"):
     return f"{m:+.3f} [{lo:+.3f}, {hi:+.3f}]{sig}"
 
 
+def fold_wording(n):
+    """Caption wording that follows the fold count actually in the data.
+
+    The captions used to hardcode "5-fold" and "df = 4"; pointed at a variant
+    they would have described df = 4 above intervals computed with df = 9.
+    """
+    return {"5-fold": f"{n}-fold",
+            "df $= 4$": f"df $= {n - 1}$",
+            "(df=4)": f"(df={n - 1})",
+            "df=4": f"df={n - 1}",
+            "five spatial folds": f"{n} spatial folds"}
+
+
+def apply_wording(text, n=None):
+    n = n or (max(_FOLD_COUNTS) if _FOLD_COUNTS else 5)
+    for old, new in fold_wording(n).items():
+        text = text.replace(old, new)
+    return text
+
+
 def main():
     lines = [
         r"\begin{table*}",
         r"\centering",
-        r"\caption{Constrained-negative sensitivity: manual pipelines re-run with negatives restricted to the positives' slope envelope ($\geq$ 10th percentile of slope at positive locations; Section~\ref{sec:methods:pointprobes}), including the TerraMind pipelines re-encoded in the same environment. AUC ROC with fold-level paired $95\%$ $t$-intervals of the difference against A on the same (stratified) folds; $^{*}$: interval excludes zero. AUC PR of A is reported per basin to show the hardening of the task relative to uniform sampling.}",
+        r"\caption{Constrained-negative sensitivity: manual pipelines re-run with negatives restricted to the positives' slope envelope ($\geq$ 10th percentile of slope at positive locations; Section~\ref{sec:methods:pointprobes}), including all three foundation-model pipelines re-encoded in the same environment. AUC ROC with fold-level paired $95\%$ $t$-intervals of the difference against A on the same (stratified) folds; $^{*}$: interval excludes zero. AUC PR of A is reported per basin to show the hardening of the task relative to uniform sampling.}",
         r"\label{tab:constrained}",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{3pt}",
@@ -57,7 +90,7 @@ def main():
     ]
     md_rows = []
     for b_slug, b_name in BASINS:
-        d = json.loads((RESULTS / f"{b_slug}_point_probes_constrained.json").read_text())
+        d = json.loads((RESULTS / f"{b_slug}_point_probes_constrained{VARIANT}.json").read_text())
         fm = d["fold_metrics"]
         A_roc = fm["A"]["roc"]
         a_mean = sum(A_roc) / len(A_roc)
@@ -75,15 +108,15 @@ def main():
             first = False
         lines.append(r"\midrule" if b_slug != BASINS[-1][0] else r"\bottomrule")
     lines.extend([r"\end{tabular}", r"\end{table*}", ""])
-    (OUT_DIR / "tab7_constrained.tex").write_text("\n".join(lines))
-    print("  wrote tab7_constrained.tex")
+    (OUT_DIR / f"tab7_constrained{VARIANT}.tex").write_text(apply_wording("\n".join(lines)))
+    print(f"  wrote tab7_constrained{VARIANT}.tex")
 
     md = ["# Table 7 — Constrained-negative sensitivity", "",
           "| Basin | Probe | AUC ROC | ΔROC vs A |",
           "|---|---|---|---|"] + md_rows + [
           "", "*: fold-level paired 95% t-CI (df=4) excludes zero."]
-    (OUT_DIR / "tab7_constrained.md").write_text("\n".join(md))
-    print("  wrote tab7_constrained.md")
+    (OUT_DIR / f"tab7_constrained{VARIANT}.md").write_text(apply_wording("\n".join(md)))
+    print(f"  wrote tab7_constrained{VARIANT}.md")
 
 
 if __name__ == "__main__":

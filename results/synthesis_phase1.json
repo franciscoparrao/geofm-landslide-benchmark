@@ -1,0 +1,418 @@
+{
+  "k_for_match": 5,
+  "edge_threshold": 0.7,
+  "basins": [
+    "01_rio_lluta",
+    "06_rio_huasco",
+    "09_rio_maipo",
+    "11_rio_maule",
+    "13_rio_bueno"
+  ],
+  "optimal_k_by_basin": [
+    {
+      "basin": "01_rio_lluta",
+      "regime": "Hyperarid",
+      "lat": -18.0,
+      "k_opt": 3,
+      "ari_at_k_opt": 0.5662358582439884,
+      "ari_std_at_k_opt": 0.20068429477647148,
+      "all_runs": [
+        [
+          3,
+          0.5662358582439884,
+          0.20068429477647148
+        ],
+        [
+          5,
+          0.42513785662236037,
+          0.128342163512272
+        ],
+        [
+          7,
+          0.49729787996195146,
+          0.12344187798025233
+        ],
+        [
+          10,
+          0.5510324440948478,
+          0.09214352003142723
+        ],
+        [
+          12,
+          0.4853385673957013,
+          0.08213680417051258
+        ]
+      ]
+    },
+    {
+      "basin": "06_rio_huasco",
+      "regime": "Semiarid",
+      "lat": -28.5,
+      "k_opt": 3,
+      "ari_at_k_opt": 0.47472059246650306,
+      "ari_std_at_k_opt": 0.2035086273030942,
+      "all_runs": [
+        [
+          3,
+          0.47472059246650306,
+          0.2035086273030942
+        ],
+        [
+          5,
+          0.4243391808473559,
+          0.18442361192500484
+        ],
+        [
+          7,
+          0.4392801180296889,
+          0.10358617095716986
+        ],
+        [
+          10,
+          0.3625214577722886,
+          0.06916237311483184
+        ],
+        [
+          12,
+          0.3564875365752105,
+          0.06122869056094529
+        ]
+      ]
+    },
+    {
+      "basin": "09_rio_maipo",
+      "regime": "Mediterranean",
+      "lat": -33.5,
+      "k_opt": 5,
+      "ari_at_k_opt": 0.5885201842831833,
+      "ari_std_at_k_opt": 0.14278919067957316,
+      "all_runs": [
+        [
+          3,
+          0.5558356462637427,
+          0.20728052123608445
+        ],
+        [
+          5,
+          0.5885201842831833,
+          0.14278919067957316
+        ],
+        [
+          7,
+          0.476445629489162,
+          0.06830807554693369
+        ],
+        [
+          10,
+          0.42047405364332346,
+          0.07008410057262499
+        ],
+        [
+          12,
+          0.39326754049721546,
+          0.05425905390137945
+        ]
+      ]
+    },
+    {
+      "basin": "11_rio_maule",
+      "regime": "Temperate-humid",
+      "lat": -35.5,
+      "k_opt": 3,
+      "ari_at_k_opt": 0.6413815633630882,
+      "ari_std_at_k_opt": 0.26388002229159974,
+      "all_runs": [
+        [
+          3,
+          0.6413815633630882,
+          0.26388002229159974
+        ],
+        [
+          5,
+          0.608848461347433,
+          0.12503877083016635
+        ],
+        [
+          7,
+          0.5396090222650481,
+          0.10934261732496989
+        ],
+        [
+          10,
+          0.4436405764306926,
+          0.0593822546964181
+        ],
+        [
+          12,
+          0.4308136004848656,
+          0.06646109801603627
+        ]
+      ]
+    },
+    {
+      "basin": "13_rio_bueno",
+      "regime": "Temperate-rainy",
+      "lat": -40.5,
+      "k_opt": 3,
+      "ari_at_k_opt": 0.7009102280136182,
+      "ari_std_at_k_opt": 0.2375791817159658,
+      "all_runs": [
+        [
+          3,
+          0.7009102280136182,
+          0.2375791817159658
+        ],
+        [
+          5,
+          0.520577355087661,
+          0.11985423308328709
+        ],
+        [
+          7,
+          0.4998803730769709,
+          0.10508420240914086
+        ],
+        [
+          10,
+          0.43026347533236237,
+          0.06878704137636932
+        ],
+        [
+          12,
+          0.3915723486023187,
+          0.052213327432057755
+        ]
+      ]
+    }
+  ],
+  "components": [
+    {
+      "members": [
+        [
+          "01_rio_lluta",
+          1
+        ],
+        [
+          "06_rio_huasco",
+          2
+        ],
+        [
+          "09_rio_maipo",
+          2
+        ],
+        [
+          "11_rio_maule",
+          4
+        ],
+        [
+          "13_rio_bueno",
+          3
+        ]
+      ],
+      "n_basins": 5,
+      "basins_present": [
+        "01_rio_lluta",
+        "06_rio_huasco",
+        "09_rio_maipo",
+        "11_rio_maule",
+        "13_rio_bueno"
+      ],
+      "label": "valley_bottom",
+      "top_features": {
+        "openness_negative": 90.21235809326171,
+        "openness_positive": 86.44811706542968,
+        "hand": 23.12801456451416,
+        "convergence": -22.154659080505372,
+        "twi": 10.381449127197266
+      }
+    },
+    {
+      "members": [
+        [
+          "01_rio_lluta",
+          2
+        ],
+        [
+          "06_rio_huasco",
+          3
+        ],
+        [
+          "09_rio_maipo",
+          3
+        ],
+        [
+          "11_rio_maule",
+          2
+        ],
+        [
+          "13_rio_bueno",
+          1
+        ]
+      ],
+      "n_basins": 5,
+      "basins_present": [
+        "01_rio_lluta",
+        "06_rio_huasco",
+        "09_rio_maipo",
+        "11_rio_maule",
+        "13_rio_bueno"
+      ],
+      "label": "valley_bottom",
+      "top_features": {
+        "openness_positive": 90.0569076538086,
+        "openness_negative": 87.7696517944336,
+        "hand": 56.138810348510745,
+        "convergence": 17.047350692749024,
+        "tpi": 7.938469934463501
+      }
+    },
+    {
+      "members": [
+        [
+          "01_rio_lluta",
+          3
+        ],
+        [
+          "06_rio_huasco",
+          0
+        ],
+        [
+          "06_rio_huasco",
+          1
+        ],
+        [
+          "09_rio_maipo",
+          4
+        ],
+        [
+          "11_rio_maule",
+          3
+        ],
+        [
+          "13_rio_bueno",
+          4
+        ]
+      ],
+      "n_basins": 5,
+      "basins_present": [
+        "01_rio_lluta",
+        "06_rio_huasco",
+        "09_rio_maipo",
+        "11_rio_maule",
+        "13_rio_bueno"
+      ],
+      "label": "steep_slope",
+      "top_features": {
+        "hand": 317.8329798380534,
+        "openness_positive": 81.34159469604492,
+        "openness_negative": 75.36572392781575,
+        "tpi": 48.16646560033163,
+        "slope": 23.84131654103597
+      }
+    },
+    {
+      "members": [
+        [
+          "01_rio_lluta",
+          4
+        ],
+        [
+          "06_rio_huasco",
+          4
+        ],
+        [
+          "09_rio_maipo",
+          0
+        ],
+        [
+          "09_rio_maipo",
+          1
+        ],
+        [
+          "11_rio_maule",
+          1
+        ],
+        [
+          "13_rio_bueno",
+          2
+        ]
+      ],
+      "n_basins": 5,
+      "basins_present": [
+        "01_rio_lluta",
+        "06_rio_huasco",
+        "09_rio_maipo",
+        "11_rio_maule",
+        "13_rio_bueno"
+      ],
+      "label": "steep_slope",
+      "top_features": {
+        "hand": 200.78443654378256,
+        "openness_negative": 79.16778818766277,
+        "openness_positive": 74.57367451985677,
+        "slope": 27.058526674906414,
+        "tpi": -25.47505370279153
+      }
+    },
+    {
+      "members": [
+        [
+          "01_rio_lluta",
+          0
+        ]
+      ],
+      "n_basins": 1,
+      "basins_present": [
+        "01_rio_lluta"
+      ],
+      "label": "steep_slope",
+      "top_features": {
+        "hand": 125.25709533691406,
+        "openness_negative": 83.9775619506836,
+        "openness_positive": 83.77354431152344,
+        "slope": 13.149495124816895,
+        "twi": 6.598020553588867
+      }
+    },
+    {
+      "members": [
+        [
+          "11_rio_maule",
+          0
+        ]
+      ],
+      "n_basins": 1,
+      "basins_present": [
+        "11_rio_maule"
+      ],
+      "label": "valley_bottom",
+      "top_features": {
+        "openness_negative": 90.56538391113281,
+        "openness_positive": 90.5239486694336,
+        "hand": 21.039283752441406,
+        "twi": 7.854323387145996,
+        "slope": 3.1615889072418213
+      }
+    },
+    {
+      "members": [
+        [
+          "13_rio_bueno",
+          0
+        ]
+      ],
+      "n_basins": 1,
+      "basins_present": [
+        "13_rio_bueno"
+      ],
+      "label": "valley_bottom",
+      "top_features": {
+        "openness_negative": 87.41627502441406,
+        "openness_positive": 86.21207427978516,
+        "hand": 52.768882751464844,
+        "slope": 9.002694129943848,
+        "twi": 6.770385265350342
+      }
+    }
+  ]
+}

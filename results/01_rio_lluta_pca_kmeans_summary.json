@@ -1,0 +1,111 @@
+{
+  "basin": "01_rio_lluta",
+  "n_valid_pixels": 3769579,
+  "n_features": 17,
+  "feature_names": [
+    "convergence",
+    "curvature",
+    "dev",
+    "eastness",
+    "mrrtf",
+    "mrvbf",
+    "northness",
+    "openness_negative",
+    "openness_positive",
+    "slope",
+    "svf",
+    "tpi",
+    "tri",
+    "vrm",
+    "twi",
+    "hand",
+    "log1p_flow_accumulation_mfd"
+  ],
+  "pca_components": 10,
+  "pca_explained_variance_ratio": [
+    0.2613232135772705,
+    0.2233971804380417,
+    0.08986368030309677,
+    0.0651770830154419,
+    0.06212008744478226,
+    0.05608030781149864,
+    0.05284808576107025,
+    0.04900990054011345,
+    0.03359295055270195,
+    0.030689632520079613
+  ],
+  "pca_cumulative": [
+    0.2613232135772705,
+    0.4847204089164734,
+    0.5745840668678284,
+    0.6397611498832703,
+    0.7018812298774719,
+    0.7579615116119385,
+    0.8108096122741699,
+    0.8598195314407349,
+    0.8934124708175659,
+    0.9241021275520325
+  ],
+  "runs": [
+    {
+      "k": 5,
+      "fit_seconds": 3.2116603490139823,
+      "silhouette_subsample": 0.15915994346141815,
+      "silhouette_subsample_size": 50000,
+      "inertia": 36385060.0,
+      "cluster_counts": [
+        1305634,
+        631363,
+        750728,
+        762172,
+        319682
+      ],
+      "raster": "01_rio_lluta_kmeans_K05.tif"
+    },
+    {
+      "k": 10,
+      "fit_seconds": 1.3384115450026002,
+      "silhouette_subsample": 0.14382600784301758,
+      "silhouette_subsample_size": 50000,
+      "inertia": 25710162.0,
+      "cluster_counts": [
+        244750,
+        542035,
+        752366,
+        547063,
+        132356,
+        50133,
+        543051,
+        11495,
+        295208,
+        651122
+      ],
+      "raster": "01_rio_lluta_kmeans_K10.tif"
+    },
+    {
+      "k": 15,
+      "fit_seconds": 2.372907322976971,
+      "silhouette_subsample": 0.16135039925575256,
+      "silhouette_subsample_size": 50000,
+      "inertia": 19457902.0,
+      "cluster_counts": [
+        343924,
+        350848,
+        425838,
+        9141,
+        32186,
+        543987,
+        430750,
+        28907,
+        279991,
+        468523,
+        389084,
+        224013,
+        99880,
+        6650,
+        135857
+      ],
+      "raster": "01_rio_lluta_kmeans_K15.tif"
+    }
+  ]
+}

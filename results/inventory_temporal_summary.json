@@ -1,0 +1,70 @@
+{
+  "06_rio_huasco": {
+    "n_inventory_rows": 296,
+    "n_with_year": 296,
+    "year_min": 2015,
+    "year_max": 2020,
+    "year_median": 2017,
+    "pct_pre_2015": 0.0,
+    "pct_pre_2023": 100.0,
+    "triggers": {
+      "Lluvias": 295,
+      "Excavación pie de ladera/talud": 1
+    },
+    "types": {
+      "Flujo": 271,
+      "Caída": 20,
+      "Deslizamiento": 5
+    },
+    "ml_dataset_positive_sources": {
+      "sernageomin": 296
+    }
+  },
+  "09_rio_maipo": {
+    "n_inventory_rows": 349,
+    "n_with_year": 349,
+    "year_min": 0,
+    "year_max": 2021,
+    "year_median": 2016,
+    "pct_pre_2015": 48.4,
+    "pct_pre_2023": 100.0,
+    "triggers": {
+      "Lluvias": 214,
+      "Sin información": 61,
+      "?": 58,
+      "Evento Sísmico": 9,
+      "Deshielo": 6,
+      "Vibración artificial (tráfico, explosiones, hincado de pilotes, otro)": 1
+    },
+    "types": {
+      "Flujo": 191,
+      "Caída": 79,
+      "Deslizamiento": 77,
+      "Propagación": 1,
+      "Deformaciones de ladera": 1
+    },
+    "ml_dataset_positive_sources": {
+      "sernageomin": 349
+    }
+  },
+  "11_rio_maule": {
+    "n_inventory_rows": 8,
+    "n_with_year": 8,
+    "year_min": 2010,
+    "year_max": 2010,
+    "year_median": 2010,
+    "pct_pre_2015": 100.0,
+    "pct_pre_2023": 100.0,
+    "triggers": {
+      "Evento Sísmico": 8
+    },
+    "types": {
+      "Caída": 4,
+      "Deslizamiento": 4
+    },
+    "ml_dataset_positive_sources": {
+      "maule2010": 203,
+      "sernageomin": 8
+    }
+  }
+}

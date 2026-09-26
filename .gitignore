@@ -1,0 +1,36 @@
+# This package is its own repository, so it needs its own ignore rules: the
+# research monorepo's .gitignore does not reach a nested repo.
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Heavy derived artifacts. results/*.json IS tracked on purpose — those are the
+# per-fold files every table and figure regenerates from, and the manuscript
+# claims they ship here. Everything bulkier is rebuilt from the raw inputs or
+# fetched from the Zenodo deposit.
+results/_patches/
+results/_layers/
+results/_lora/
+results/_embcache/
+results/_globaldraw/
+results/_logs/
+results/susceptibility_maps/
+results/benchmark_points/
+*.npz
+*.npy
+*.tif
+*.tiff
+*.pt
+*.pth
+*.ckpt
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp

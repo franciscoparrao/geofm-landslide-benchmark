@@ -1,8 +1,26 @@
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 RESULTS = ROOT / "results"
+
+
+def _env_path(var: str, default: Path) -> Path:
+    """Input location, overridable without editing the source.
+
+    Defaults sit under data/ following the layout in data/README.md, so the
+    package works from a clean checkout. Point the environment variable at an
+    existing tree, or symlink it into data/, to use inputs held elsewhere --
+    these datasets are large and are never copied into the repository.
+    """
+    return Path(os.environ.get(var, str(default)))
+
+
+INVENTORY_BASE = _env_path("GEOFM_INVENTORY_DIR", DATA / "basin_inventory")
+ML_DATASET_BASE = _env_path("GEOFM_ML_DATASET_DIR", DATA / "ml_dataset")
+S2_COMPOSITE_BASE = _env_path("GEOFM_S2_DIR", DATA / "s2_composites")
+PRITHVI_PATH = str(_env_path("GEOFM_PRITHVI_DIR", DATA / "models" / "prithvi-300m"))
 
 BASINS = (
     "01_rio_lluta",

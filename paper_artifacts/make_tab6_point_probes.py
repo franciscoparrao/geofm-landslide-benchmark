@@ -1,6 +1,6 @@
 """Table 6 — Point-probe controls: spectral-point and context-matched baselines.
 
-Reads results/{basin}_point_probes.json (produced by src/point_probes.py) and
+Reads results/{basin}_point_probes{VARIANT}.json (produced by src/point_probes.py) and
 reports AUC ROC of A, SPEC, A+SPEC and ACTX with fold-level paired t-intervals
 of the difference against A, plus the paired difference of the stored FM runs
 against ACTX (environment caveat noted in the manuscript).
@@ -8,11 +8,17 @@ against ACTX (environment caveat noted in the manuscript).
 from __future__ import annotations
 import json
 import math
+import os
 from pathlib import Path
 
-ROOT = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie")
-RESULTS = ROOT / "pregunta_3_unidades_geomorfologicas/results"
-OUT_DIR = ROOT / "paper/tables"
+from scipy.stats import t as student_t
+
+# See make_tab3_benchmark.py: suffix of the result files to read, empty for the
+# primary 5-fold analysis.
+VARIANT = os.environ.get("TABLE_VARIANT", "")
+
+from paths import RESULTS
+from paths import TABLES_DIR as OUT_DIR
 
 BASINS = [("06_rio_huasco", "Huasco", "Semi-arid"),
           ("09_rio_maipo",  "Maipo",  "Mediterranean"),
@@ -24,14 +30,20 @@ SETS = [("SPEC", "Spec.-point (8)"),
         ("SCTX", "Spec. + ctx (56)"),
         ("AFULL", "A + full ctx (175)")]
 
-T_975_DF4 = 2.776
+_FOLD_COUNTS = set()
+
+
+def t_crit(n):
+    """Two-sided 95% t quantile for n folds, derived from the data."""
+    _FOLD_COUNTS.add(int(n))
+    return float(student_t.ppf(0.975, n - 1))
 
 
 def tci(vals):
     n = len(vals)
     m = sum(vals) / n
     sd = math.sqrt(sum((v - m) ** 2 for v in vals) / (n - 1))
-    h = T_975_DF4 * sd / math.sqrt(n)
+    h = t_crit(n) * sd / math.sqrt(n)
     return m, m - h, m + h
 
 
@@ -39,6 +51,26 @@ def fmt_delta(deltas, star="$^{*}$"):
     m, lo, hi = tci(deltas)
     sig = star if not (lo <= 0 <= hi) else ""
     return f"{m:+.3f} [{lo:+.3f}, {hi:+.3f}]{sig}"
+
+
+def fold_wording(n):
+    """Caption wording that follows the fold count actually in the data.
+
+    The captions used to hardcode "5-fold" and "df = 4"; pointed at a variant
+    they would have described df = 4 above intervals computed with df = 9.
+    """
+    return {"5-fold": f"{n}-fold",
+            "df $= 4$": f"df $= {n - 1}$",
+            "(df=4)": f"(df={n - 1})",
+            "df=4": f"df={n - 1}",
+            "five spatial folds": f"{n} spatial folds"}
+
+
+def apply_wording(text, n=None):
+    n = n or (max(_FOLD_COUNTS) if _FOLD_COUNTS else 5)
+    for old, new in fold_wording(n).items():
+        text = text.replace(old, new)
+    return text
 
 
 def main():
@@ -56,7 +88,7 @@ def main():
     ]
     md_rows = []
     for b_slug, b_name, regime in BASINS:
-        d = json.loads((RESULTS / f"{b_slug}_point_probes.json").read_text())
+        d = json.loads((RESULTS / f"{b_slug}_point_probes{VARIANT}.json").read_text())
         fm = d["fold_metrics"]
         A_roc, A_pr = fm["A"]["roc"], fm["A"]["pr"]
         a_mean = sum(A_roc) / len(A_roc)
@@ -92,15 +124,15 @@ def main():
             first = False
         lines.append(r"\midrule" if b_slug != BASINS[-1][0] else r"\bottomrule")
     lines.extend([r"\end{tabular}", r"\end{table*}", ""])
-    (OUT_DIR / "tab6_point_probes.tex").write_text("\n".join(lines))
-    print("  wrote tab6_point_probes.tex")
+    (OUT_DIR / f"tab6_point_probes{VARIANT}.tex").write_text(apply_wording("\n".join(lines)))
+    print(f"  wrote tab6_point_probes{VARIANT}.tex")
 
     md = ["# Table 6 — Point-probe controls", "",
           "| Basin | Probe | AUC ROC | ΔROC vs A | ΔPR vs A | best FM vs A+full context |",
           "|---|---|---|---|---|---|"] + md_rows + [
           "", "*: fold-level paired 95% t-CI (df=4) excludes zero."]
-    (OUT_DIR / "tab6_point_probes.md").write_text("\n".join(md))
-    print("  wrote tab6_point_probes.md")
+    (OUT_DIR / f"tab6_point_probes{VARIANT}.md").write_text(apply_wording("\n".join(md)))
+    print(f"  wrote tab6_point_probes{VARIANT}.md")
 
 
 if __name__ == "__main__":

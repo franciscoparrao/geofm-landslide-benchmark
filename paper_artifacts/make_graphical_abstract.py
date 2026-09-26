@@ -11,7 +11,7 @@ from pathlib import Path
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-OUT_DIR = Path("/home/franciscoparrao/proyectos/no_supervisado_superficie/paper/figures")
+from paths import FIGURES_DIR as OUT_DIR
 
 mpl.rcParams.update({
     "font.family": "serif",

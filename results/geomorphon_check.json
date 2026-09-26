@@ -1,0 +1,299 @@
+{
+  "06_rio_huasco": {
+    "basin": "Huasco",
+    "groups": {
+      "Flujo": {
+        "n": 271,
+        "hillslope_pct": 94.4649446494465,
+        "depositional_pct": 5.166051660516605,
+        "slope_mean": 13.094804763793945,
+        "log1p_acc_mean": 28552.744140625,
+        "hand_mean": 21.322410583496094,
+        "top_classes": [
+          [
+            "hollow",
+            124
+          ],
+          [
+            "slope",
+            110
+          ],
+          [
+            "spur",
+            22
+          ]
+        ]
+      },
+      "Ca\u00edda": {
+        "n": 20,
+        "hillslope_pct": 100.0,
+        "depositional_pct": 0.0,
+        "slope_mean": 29.044565200805664,
+        "log1p_acc_mean": 16.715435028076172,
+        "hand_mean": 35.514801025390625,
+        "top_classes": [
+          [
+            "slope",
+            12
+          ],
+          [
+            "hollow",
+            5
+          ],
+          [
+            "spur",
+            3
+          ]
+        ]
+      },
+      "ALL positives": {
+        "n": 296,
+        "hillslope_pct": 94.93243243243244,
+        "depositional_pct": 4.72972972972973,
+        "slope_mean": 14.357943534851074,
+        "log1p_acc_mean": 26142.5546875,
+        "hand_mean": 22.224084854125977,
+        "top_classes": [
+          [
+            "hollow",
+            131
+          ],
+          [
+            "slope",
+            125
+          ],
+          [
+            "spur",
+            25
+          ]
+        ]
+      },
+      "negatives": {
+        "n": 1480,
+        "hillslope_pct": 98.58108108108108,
+        "depositional_pct": 0.8783783783783784,
+        "slope_mean": 21.980838775634766,
+        "log1p_acc_mean": 927.8280639648438,
+        "hand_mean": 230.52745056152344,
+        "top_classes": [
+          [
+            "slope",
+            684
+          ],
+          [
+            "spur",
+            396
+          ],
+          [
+            "hollow",
+            375
+          ]
+        ]
+      }
+    }
+  },
+  "09_rio_maipo": {
+    "basin": "Maipo",
+    "groups": {
+      "Flujo": {
+        "n": 191,
+        "hillslope_pct": 96.8586387434555,
+        "depositional_pct": 3.1413612565445024,
+        "slope_mean": 16.608728408813477,
+        "log1p_acc_mean": 17311.79296875,
+        "hand_mean": 49.84007263183594,
+        "top_classes": [
+          [
+            "slope",
+            89
+          ],
+          [
+            "hollow",
+            84
+          ],
+          [
+            "spur",
+            12
+          ]
+        ]
+      },
+      "Ca\u00edda": {
+        "n": 79,
+        "hillslope_pct": 94.9367088607595,
+        "depositional_pct": 2.5316455696202533,
+        "slope_mean": 29.61582374572754,
+        "log1p_acc_mean": 158.39308166503906,
+        "hand_mean": 70.95799255371094,
+        "top_classes": [
+          [
+            "slope",
+            50
+          ],
+          [
+            "hollow",
+            15
+          ],
+          [
+            "spur",
+            10
+          ]
+        ]
+      },
+      "Deslizamiento": {
+        "n": 76,
+        "hillslope_pct": 98.68421052631578,
+        "depositional_pct": 0.0,
+        "slope_mean": 29.379201889038086,
+        "log1p_acc_mean": 227.4442596435547,
+        "hand_mean": 303.5563049316406,
+        "top_classes": [
+          [
+            "slope",
+            29
+          ],
+          [
+            "hollow",
+            28
+          ],
+          [
+            "spur",
+            18
+          ]
+        ]
+      },
+      "ALL positives": {
+        "n": 348,
+        "hillslope_pct": 96.55172413793103,
+        "depositional_pct": 2.586206896551724,
+        "slope_mean": 22.352731704711914,
+        "log1p_acc_mean": 9588.60546875,
+        "hand_mean": 109.83983612060547,
+        "top_classes": [
+          [
+            "slope",
+            169
+          ],
+          [
+            "hollow",
+            127
+          ],
+          [
+            "spur",
+            40
+          ]
+        ]
+      },
+      "negatives": {
+        "n": 1740,
+        "hillslope_pct": 93.2183908045977,
+        "depositional_pct": 6.0344827586206895,
+        "slope_mean": 18.20241355895996,
+        "log1p_acc_mean": 1148.24365234375,
+        "hand_mean": 181.7217559814453,
+        "top_classes": [
+          [
+            "slope",
+            719
+          ],
+          [
+            "hollow",
+            465
+          ],
+          [
+            "spur",
+            420
+          ]
+        ]
+      }
+    }
+  },
+  "11_rio_maule": {
+    "basin": "Maule",
+    "groups": {
+      "disrupted": {
+        "n": 175,
+        "hillslope_pct": 97.14285714285714,
+        "depositional_pct": 0.5714285714285714,
+        "slope_mean": 35.404972076416016,
+        "log1p_acc_mean": 71.58364868164062,
+        "hand_mean": 252.3908233642578,
+        "top_classes": [
+          [
+            "slope",
+            91
+          ],
+          [
+            "hollow",
+            42
+          ],
+          [
+            "spur",
+            37
+          ]
+        ]
+      },
+      "flow": {
+        "n": 23,
+        "hillslope_pct": 100.0,
+        "depositional_pct": 0.0,
+        "slope_mean": 31.92850685119629,
+        "log1p_acc_mean": 502.3240051269531,
+        "hand_mean": 231.46377563476562,
+        "top_classes": [
+          [
+            "hollow",
+            17
+          ],
+          [
+            "slope",
+            6
+          ]
+        ]
+      },
+      "ALL positives": {
+        "n": 210,
+        "hillslope_pct": 97.14285714285714,
+        "depositional_pct": 0.9523809523809524,
+        "slope_mean": 33.53759002685547,
+        "log1p_acc_mean": 128.7671661376953,
+        "hand_mean": 236.59434509277344,
+        "top_classes": [
+          [
+            "slope",
+            100
+          ],
+          [
+            "hollow",
+            66
+          ],
+          [
+            "spur",
+            38
+          ]
+        ]
+      },
+      "negatives": {
+        "n": 1045,
+        "hillslope_pct": 84.97607655502392,
+        "depositional_pct": 13.205741626794259,
+        "slope_mean": 10.334501266479492,
+        "log1p_acc_mean": 1122.891357421875,
+        "hand_mean": 87.61518096923828,
+        "top_classes": [
+          [
+            "slope",
+            358
+          ],
+          [
+            "spur",
+            258
+          ],
+          [
+            "hollow",
+            257
+          ]
+        ]
+      }
+    }
+  }
+}

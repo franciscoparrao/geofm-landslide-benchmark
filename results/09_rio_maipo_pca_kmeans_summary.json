@@ -1,0 +1,111 @@
+{
+  "basin": "09_rio_maipo",
+  "n_valid_pixels": 16884691,
+  "n_features": 17,
+  "feature_names": [
+    "convergence",
+    "curvature",
+    "dev",
+    "eastness",
+    "mrrtf",
+    "mrvbf",
+    "northness",
+    "openness_negative",
+    "openness_positive",
+    "slope",
+    "svf",
+    "tpi",
+    "tri",
+    "vrm",
+    "twi",
+    "hand",
+    "log1p_flow_accumulation_mfd"
+  ],
+  "pca_components": 10,
+  "pca_explained_variance_ratio": [
+    0.319360613822937,
+    0.21219868957996368,
+    0.07434902340173721,
+    0.060969576239585876,
+    0.059042226523160934,
+    0.05847840756177902,
+    0.049584418535232544,
+    0.039828039705753326,
+    0.03161152824759483,
+    0.025856273248791695
+  ],
+  "pca_cumulative": [
+    0.319360613822937,
+    0.5315592885017395,
+    0.6059083342552185,
+    0.6668779253959656,
+    0.7259201407432556,
+    0.7843985557556152,
+    0.8339829444885254,
+    0.8738110065460205,
+    0.9054225087165833,
+    0.9312787652015686
+  ],
+  "runs": [
+    {
+      "k": 5,
+      "fit_seconds": 1.0996893100091256,
+      "silhouette_subsample": 0.15841957926750183,
+      "silhouette_subsample_size": 50000,
+      "inertia": 149439584.0,
+      "cluster_counts": [
+        4190607,
+        4260040,
+        3343169,
+        2282671,
+        2808204
+      ],
+      "raster": "09_rio_maipo_kmeans_K05.tif"
+    },
+    {
+      "k": 10,
+      "fit_seconds": 0.9765566460264381,
+      "silhouette_subsample": 0.1511659175157547,
+      "silhouette_subsample_size": 50000,
+      "inertia": 111675408.0,
+      "cluster_counts": [
+        1959643,
+        2296620,
+        1812109,
+        2249133,
+        1542835,
+        953167,
+        2966940,
+        2053484,
+        59421,
+        991339
+      ],
+      "raster": "09_rio_maipo_kmeans_K10.tif"
+    },
+    {
+      "k": 15,
+      "fit_seconds": 8.61605242700898,
+      "silhouette_subsample": 0.15429438650608063,
+      "silhouette_subsample_size": 50000,
+      "inertia": 86871400.0,
+      "cluster_counts": [
+        654385,
+        1746540,
+        1791819,
+        1331864,
+        1479008,
+        1869596,
+        1095212,
+        1589438,
+        1552592,
+        10724,
+        67456,
+        552345,
+        603824,
+        1000695,
+        1539193
+      ],
+      "raster": "09_rio_maipo_kmeans_K15.tif"
+    }
+  ]
+}

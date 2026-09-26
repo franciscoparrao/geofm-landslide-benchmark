@@ -33,12 +33,15 @@ from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
 from config import BASINS, RESULTS, basin_dir, feature_paths, LOG_TRANSFORM
 from terramind_linprobe import (
     BUFFER_PX,
+    DEFAULT_PRITHVI_PATH,
     NEG_RATIO,
     PATCH_SIZE,
     SEED,
     SPATIAL_BLOCK_PX,
     S2_COMPOSITE_BASE,
     load_events_xy,
+    lookup_pixel_features,
+    sample_negatives,
 )
 
 N_FOLDS = 5
@@ -81,13 +84,9 @@ def build_dataset(basin, negatives="uniform"):
     n_neg_target = NEG_RATIO * n_pos
     half = PATCH_SIZE // 2
     if negatives == "uniform":
-        neg_rows, neg_cols = [], []
-        while len(neg_rows) < n_neg_target:
-            r = int(rng.integers(half, height - half))
-            c = int(rng.integers(half, width - half))
-            if not excluded[r * width + c]:
-                neg_rows.append(r); neg_cols.append(c)
-        neg_rows, neg_cols = np.array(neg_rows), np.array(neg_cols)
+        neg_rows, neg_cols, _thr = sample_negatives(
+            dem_src, pos_rows, pos_cols, excluded, n_neg_target, rng
+        )
     else:
         with rasterio.open(feature_paths(basin)["slope"]) as ssrc:
             slope = ssrc.read(1).astype(np.float32)
@@ -95,9 +94,12 @@ def build_dataset(basin, negatives="uniform"):
         if snod is not None:
             slope = np.where(slope == snod, np.nan, slope)
         thr = float(np.nanpercentile(slope[pos_rows, pos_cols], 10))
+        demv = dem_src.read(1).astype(np.float32)
+        demv = np.where(np.isfinite(demv), demv, 0.0)
         eligible = np.zeros((height, width), dtype=bool)
         eligible[half:height - half, half:width - half] = True
         eligible &= np.nan_to_num(slope, nan=-1.0) >= thr
+        eligible &= demv != 0.0          # dentro de la cuenca
         eligible &= ~excluded.reshape(height, width)
         flat_eligible = np.flatnonzero(eligible.ravel())
         print(f"[dataset] constrained negatives: slope >= {thr:.1f} deg "
@@ -110,16 +112,14 @@ def build_dataset(basin, negatives="uniform"):
     y = np.concatenate([np.ones(n_pos), np.zeros(len(neg_rows))]).astype(np.int8)
 
     with np.load(RESULTS / f"{basin}_stack.npz", allow_pickle=False) as npz:
-        X_all = npz["X"].astype(np.float32)
+        # See terramind_linprobe: already float32, copy=False saves 1.6 GB.
+        X_all = npz["X"].astype(np.float32, copy=False)
         valid_idx = npz["valid_idx"]
-    flat_to_row = {int(idx): i for i, idx in enumerate(valid_idx)}
-    flat_positions = all_rows * width + all_cols
-    pixel_features = np.full((len(all_rows), X_all.shape[1]), np.nan, np.float32)
-    valid_mask = np.zeros(len(all_rows), dtype=bool)
-    for i, fp in enumerate(flat_positions):
-        if int(fp) in flat_to_row:
-            pixel_features[i] = X_all[flat_to_row[int(fp)]]
-            valid_mask[i] = True
+    flat_positions = all_rows.astype(np.int64) * width + all_cols
+    pixel_features, valid_mask = lookup_pixel_features(
+        X_all, valid_idx, flat_positions
+    )
+    del X_all, valid_idx
     all_rows, all_cols = all_rows[valid_mask], all_cols[valid_mask]
     pixel_features, y = pixel_features[valid_mask], y[valid_mask]
 
@@ -213,38 +213,88 @@ def context_features(basin, rows, cols):
     return np.nan_to_num(feats, nan=0.0), names
 
 
-def fm_embeddings(basin, rows, cols, prithvi_path, which="all"):
-    """Encode the FM pipelines in the current environment."""
+def fm_embeddings(basin, rows, cols, y, prithvi_path, which="all",
+                  negatives="uniform"):
+    """Encode the FM pipelines in the current environment, streaming patches.
+
+    Patches are extracted and encoded in chunks (see encode_streaming): holding
+    every Sentinel-2 patch in memory costs ~5 GB for a 2000-point basin and was
+    killing the multimodal and Prithvi runs on the larger basins.
+
+    Embeddings are cached and validated against a fingerprint of the point
+    coordinates, so a re-run that only changes the number of CV folds pays no
+    encoding cost. With uniform negatives build_dataset reproduces the linear
+    probe's point set exactly, so those runs deliberately share the linprobe
+    cache entry -- the fingerprint verifies the two point sets really are
+    identical rather than assuming it, and falls back to encoding if they are
+    not. Constrained negatives are a different point set and get their own key.
+    """
     from terramind_linprobe import (
-        BATCH_SIZE, PRITHVI_HLS_INDICES, PRITHVI_NAME, TERRAMIND_NAME,
-        _encode_prithvi, build_encoder, encode_patches, extract_patches,
-        extract_patches_s2,
+        PRITHVI_HLS_INDICES, PRITHVI_NAME, TERRAMIND_NAME,
+        build_encoder, embedding_cache_path, embedding_fingerprint,
+        encode_streaming, load_cached_embeddings, save_cached_embeddings,
     )
     dem_src = rasterio.open(basin_dir(basin) / "dem_30m.tif")
     s2_src = rasterio.open(S2_COMPOSITE_BASE / f"{basin}_s2l2a_2023.tif")
     out = {}
-    print("[fm] extracting patches")
-    dem_patches = extract_patches(dem_src, rows, cols)
-    model, kind, dim, ns = build_encoder(TERRAMIND_NAME, True, ["DEM"])
-    print("[fm] encoding TerraMind DEM")
-    out["TM_DEM_ENV"] = encode_patches(kind, model, dim, dem_patches=dem_patches)
-    del model
-    s2_patches = extract_patches_s2(s2_src, rows, cols)
-    model, kind, dim, ns = build_encoder(TERRAMIND_NAME, True, ["DEM", "S2L2A"])
-    print("[fm] encoding TerraMind DEM+S2L2A")
-    out["TM_MM_ENV"] = encode_patches(kind, model, dim,
-                                      dem_patches=dem_patches,
-                                      s2_patches=s2_patches)
-    del model, s2_patches, dem_patches
-    if which == "all":
-        s2_hls = extract_patches_s2(s2_src, rows, cols,
-                                    band_indices=PRITHVI_HLS_INDICES, scale=1.0)
+
+    # (encoder name, modalities) of the linprobe run each pipeline mirrors.
+    PIPELINES = {
+        "TM_DEM_ENV":  (TERRAMIND_NAME, ["DEM"]),
+        "TM_MM_ENV":   (TERRAMIND_NAME, ["DEM", "S2L2A"]),
+        "PRITHVI_ENV": (PRITHVI_NAME,   ["S2L2A"]),
+    }
+
+    def cached(key, encode_fn):
+        encoder_name, modalities = PIPELINES[key]
+        slug = "terramind" if encoder_name == TERRAMIND_NAME else encoder_name
+        if negatives == "uniform":
+            path = embedding_cache_path(basin, slug, "pretrained", modalities)
+            fp = embedding_fingerprint(encoder_name, "pretrained", modalities,
+                                       rows, cols, y)
+        else:
+            path = (RESULTS / "_embcache" /
+                    f"{basin}_{slug}_pretrained_"
+                    f"{'+'.join(sorted(modalities)).lower()}_{negatives}.npz")
+            fp = embedding_fingerprint(encoder_name, f"pretrained:{negatives}",
+                                       modalities, rows, cols, y)
+        emb = load_cached_embeddings(path, fp)
+        if emb is not None:
+            print(f"[cache] reusing {path.name} shape={emb.shape}")
+            return emb
+        emb = encode_fn()
+        save_cached_embeddings(path, fp, emb)
+        return emb
+
+    def _tm_dem():
+        print("[fm] encoding TerraMind DEM")
+        model, kind, dim, ns = build_encoder(TERRAMIND_NAME, True, ["DEM"])
+        emb = encode_streaming(kind, model, dim, rows, cols, dem_src=dem_src)
+        del model
+        return emb
+
+    def _tm_mm():
+        print("[fm] encoding TerraMind DEM+S2L2A")
+        model, kind, dim, ns = build_encoder(TERRAMIND_NAME, True, ["DEM", "S2L2A"])
+        emb = encode_streaming(kind, model, dim, rows, cols,
+                               dem_src=dem_src, s2_src=s2_src, s2_scale=10000.0)
+        del model
+        return emb
+
+    def _prithvi():
+        print("[fm] encoding Prithvi-EO-2.0-300M (fp32)")
         model, kind, dim, ns = build_encoder(PRITHVI_NAME, True, None,
                                              prithvi_path=prithvi_path)
-        print("[fm] encoding Prithvi-EO-2.0-300M (fp32)")
-        out["PRITHVI_ENV"] = _encode_prithvi(model, s2_hls, dim, BATCH_SIZE,
-                                             ns, use_bf16=False)
-        del model, s2_hls
+        emb = encode_streaming(kind, model, dim, rows, cols, s2_src=s2_src,
+                               s2_band_indices=PRITHVI_HLS_INDICES,
+                               s2_scale=1.0, norm_stats=ns)
+        del model
+        return emb
+
+    out["TM_DEM_ENV"] = cached("TM_DEM_ENV", _tm_dem)
+    out["TM_MM_ENV"] = cached("TM_MM_ENV", _tm_mm)
+    if which == "all":
+        out["PRITHVI_ENV"] = cached("PRITHVI_ENV", _prithvi)
     return out
 
 
@@ -272,19 +322,48 @@ def main():
                          "environment (requires terratorch + weights). "
                          "'terramind' skips the slow Prithvi CPU encoding.")
     ap.add_argument("--prithvi-path",
-                    default="/home/franciscoparrao/models/prithvi-300m")
+                    default=DEFAULT_PRITHVI_PATH)
+    ap.add_argument("--splitter", choices=("group", "stratified-group"),
+                    default="group",
+                    help="Splitter for the uniform-negative CV; 'group' is the "
+                         "primary analysis. Constrained negatives always use "
+                         "stratified-group (they concentrate in few blocks), so "
+                         "this flag does not affect them and adds no suffix "
+                         "there -- their k=5 run is already the bridge.")
+    ap.add_argument("--folds", type=int, default=N_FOLDS,
+                    help=f"Number of CV folds. Default {N_FOLDS} (the primary "
+                         "analysis). Any other value reads the matching _k<folds> "
+                         "linprobe runs and writes to its own _k<folds> file.")
     args = ap.parse_args()
     basin = args.basin
+    n_folds = args.folds
+    if n_folds < 2:
+        raise SystemExit("--folds must be at least 2")
+    folds_suffix = "" if n_folds == N_FOLDS else f"_k{n_folds}"
+    # Constrained runs are stratified by construction, so the flag is a no-op
+    # there and must not rename their output.
+    splitter_suffix = ("" if args.splitter == "group"
+                       or args.negatives == "constrained" else "_sgkf")
 
     t0 = perf_counter()
     rows, cols, y, X17, block_id = build_dataset(basin, negatives=args.negatives)
     if args.negatives == "uniform":
-        folds = list(GroupKFold(n_splits=N_FOLDS).split(X17, y, groups=block_id))
+        if args.splitter == "group":
+            folds = list(GroupKFold(n_splits=n_folds).split(X17, y, groups=block_id))
+        else:
+            folds = list(StratifiedGroupKFold(n_splits=n_folds, shuffle=False)
+                         .split(X17, y, groups=block_id))
     else:
         # constrained negatives concentrate in fewer blocks; stratify by class
         # (blocks stay intact) so every test fold contains both classes.
-        folds = list(StratifiedGroupKFold(n_splits=N_FOLDS, shuffle=False)
+        folds = list(StratifiedGroupKFold(n_splits=n_folds, shuffle=False)
                      .split(X17, y, groups=block_id))
+    for fi, (_, te) in enumerate(folds):
+        if len(np.unique(y[te])) < 2:
+            raise SystemExit(
+                f"fold {fi} test set is single-class ({int(y[te].sum())} positives "
+                f"of {len(te)}); AUC is undefined at {n_folds} folds here"
+            )
 
     Xs, spec_names, Xsc, sctx_names = spectral_features(basin, rows, cols)
     print(f"[spec] {Xs.shape[1]} spectral-point + {Xsc.shape[1]} spectral-context features")
@@ -301,9 +380,13 @@ def main():
         "AFULL": np.hstack([X17, Xc, Xs, Xsc]),
     }
     if args.with_fms:
-        sets.update(fm_embeddings(basin, rows, cols, args.prithvi_path,
-                                  which=args.with_fms))
+        sets.update(fm_embeddings(basin, rows, cols, y, args.prithvi_path,
+                                  which=args.with_fms,
+                                  negatives=args.negatives))
     results = {"basin": basin, "negatives": args.negatives,
+               "n_folds": int(n_folds),
+               "splitter": ("stratified-group" if args.negatives == "constrained"
+                            else args.splitter),
                "n_pos": int(y.sum()), "n_neg": int((y == 0).sum()),
                "context_windows_px": list(CONTEXT_WINDOWS), "fold_metrics": {}}
     for name, X in sets.items():
@@ -323,9 +406,9 @@ def main():
     # reproduction check + paired comparisons vs stored FM runs (same folds).
     # Only meaningful for the uniform sampling the stored runs used.
     stored = {} if args.negatives == "constrained" else {
-        "A_stored": f"{basin}_terramind_linprobe_spatial.json",
-        "TM_MM": f"{basin}_terramind_linprobe_spatial_dem+s2l2a.json",
-        "PRITHVI": f"{basin}_prithvi-300m_linprobe_spatial.json",
+        "A_stored": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
+        "TM_MM": f"{basin}_terramind_linprobe_spatial_dem+s2l2a{splitter_suffix}{folds_suffix}.json",
+        "PRITHVI": f"{basin}_prithvi-300m_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
     }
     for key, fname in stored.items():
         p = RESULTS / fname
@@ -344,7 +427,7 @@ def main():
             }
 
     suffix = "_constrained" if args.negatives == "constrained" else ""
-    out = RESULTS / f"{basin}_point_probes{suffix}.json"
+    out = RESULTS / f"{basin}_point_probes{suffix}{splitter_suffix}{folds_suffix}.json"
     out.write_text(json.dumps(results, indent=2))
     print(f"[done] wrote {out.name} in {perf_counter() - t0:.0f}s total")
 
