@@ -1,0 +1,497 @@
+{
+  "06_rio_huasco": {
+    "basin": "Huasco",
+    "sizes": {
+      "10km": {
+        "block_px": 333,
+        "n_blocks": 122,
+        "coords_roc": [
+          0.9115120274914089,
+          0.9937095928708719,
+          0.9615199615199616,
+          0.6152401502437466,
+          0.8525544445966307
+        ],
+        "A_roc": [
+          0.9065721649484536,
+          0.960714077698177,
+          0.9757438328866901,
+          0.9361464077359546,
+          0.9523352965347214
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "20km": {
+        "block_px": 667,
+        "n_blocks": 40,
+        "coords_roc": [
+          0.9401652973395931,
+          0.9720293209876543,
+          1.0,
+          0.9071673525377228,
+          0.6993006993006994
+        ],
+        "A_roc": [
+          0.9177425665101722,
+          0.9552469135802469,
+          0.9556956201693043,
+          0.9207818930041152,
+          0.9623331214240306
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      }
+    }
+  },
+  "09_rio_maipo": {
+    "basin": "Maipo",
+    "sizes": {
+      "10km": {
+        "block_px": 333,
+        "n_blocks": 182,
+        "coords_roc": [
+          0.932215773024313,
+          0.920388859695218,
+          0.9130883567299752,
+          0.9409310160018375,
+          0.9687298378424878
+        ],
+        "A_roc": [
+          0.930916913585258,
+          0.47009108425293394,
+          0.8786127167630058,
+          0.7855447515504173,
+          0.8715643683599295
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "20km": {
+        "block_px": 667,
+        "n_blocks": 55,
+        "coords_roc": [
+          0.9246197928146352,
+          0.9582262822342754,
+          0.8900253592561285,
+          0.7377617148554337,
+          0.881194944465722
+        ],
+        "A_roc": [
+          0.8441701564910734,
+          0.8592159101722332,
+          0.882952944491406,
+          0.4719840478564307,
+          0.8416315587897358
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "30km": {
+        "block_px": 1000,
+        "n_blocks": 27,
+        "coords_roc": [
+          0.7706925473280613,
+          0.7494846423417854,
+          0.9541371607813317,
+          0.9856213402732595,
+          0.8883096716947648
+        ],
+        "A_roc": [
+          0.893098490294752,
+          0.7158317872603587,
+          0.875196045815313,
+          0.44638906961613534,
+          0.81627107364685
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "40km": {
+        "block_px": 1333,
+        "n_blocks": 18,
+        "coords_roc": [
+          0.14660194174757282,
+          0.777245423340961,
+          0.07485875706214688,
+          0.8749751984126984,
+          0.7447825779370844
+        ],
+        "A_roc": [
+          0.4770226537216829,
+          0.803704233409611,
+          0.36254237288135593,
+          0.8452876984126985,
+          0.8455525161533745
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      }
+    }
+  },
+  "11_rio_maule": {
+    "basin": "Maule",
+    "sizes": {
+      "10km": {
+        "block_px": 333,
+        "n_blocks": 185,
+        "coords_roc": [
+          0.8028846153846154,
+          0.626224652540442,
+          0.697425381635908,
+          0.7212043412300152,
+          0.6704507880524633
+        ],
+        "A_roc": [
+          0.870764652014652,
+          0.8947368421052632,
+          0.8537252221462748,
+          0.8480569494690163,
+          0.8671883610713105
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "20km": {
+        "block_px": 667,
+        "n_blocks": 66,
+        "coords_roc": [
+          0.5040408055113936,
+          0.6234396671289876,
+          0.5148856990962254,
+          0.6493055555555556,
+          0.7713464696223317
+        ],
+        "A_roc": [
+          0.8657922628510863,
+          0.8396671289875174,
+          0.90311004784689,
+          0.8148974867724869,
+          0.8979885057471264
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "30km": {
+        "block_px": 1000,
+        "n_blocks": 36,
+        "coords_roc": [
+          0.8735062293414695,
+          0.48773287850957747,
+          0.7302713467762012,
+          0.6832167832167831,
+          0.7044754913568553
+        ],
+        "A_roc": [
+          0.8623188405797102,
+          0.8598792967725006,
+          0.8751555887478217,
+          0.8245166598107775,
+          0.887520719867393
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      },
+      "40km": {
+        "block_px": 1333,
+        "n_blocks": 25,
+        "coords_roc": [
+          0.6705344010459224,
+          0.6629820978012736,
+          0.4836569579288026,
+          0.6259146341463414,
+          0.5934563174382178
+        ],
+        "A_roc": [
+          0.8609249877430951,
+          0.8411630421722937,
+          0.8985436893203883,
+          0.9506097560975609,
+          0.754205824341571
+        ],
+        "Prithvi_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "TM+DEM_roc": [
+          NaN,
+          NaN,
+          NaN,
+          NaN,
+          NaN
+        ],
+        "delta_Prithvi_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        },
+        "delta_TM+DEM_vs_A": {
+          "mean": NaN,
+          "ci": [
+            NaN,
+            NaN
+          ],
+          "significant": false
+        }
+      }
+    }
+  }
+}

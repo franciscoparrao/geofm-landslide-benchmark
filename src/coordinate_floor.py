@@ -67,11 +67,14 @@ def fit_auc(X, y, folds):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--folds", type=int, default=N_FOLDS)
+    ap.add_argument("--negatives", choices=("uniform", "constrained"),
+                    default="uniform",
+                    help="Negative pool. The floor has to be computed under the\n                          same sampling as the results it governs; review of this\n                          work pointed out that reporting it only for the uniform\n                          design leaves the constrained arm, where the headline\n                          significance lives, without one.")
     a = ap.parse_args()
     report = {}
 
     for slug, name in BASINS:
-        rows, cols, y, X17, _ = build_dataset(slug, negatives="uniform")
+        rows, cols, y, X17, _ = build_dataset(slug, negatives=a.negatives)
         width = rasterio.open(basin_dir(slug) / "dem_30m.tif").width
         XY = np.c_[rows, cols].astype(np.float32)
 
@@ -79,11 +82,24 @@ def main() -> None:
         for lbl, enc, mods in [("Prithvi", PRITHVI_NAME, ["S2L2A"]),
                                ("TM+DEM", TERRAMIND_NAME, ["DEM"])]:
             s = "terramind" if enc == TERRAMIND_NAME else enc
-            d = np.load(embedding_cache_path(slug, s, "pretrained", mods),
-                        allow_pickle=False)
+            # The embeddings are a convenience here, not the point: the floor is
+            # a statement about the manual baseline. Under a negative pool with
+            # no cached encoding we report A against coordinates and skip the
+            # foundation-model columns rather than refusing to run.
+            cache = embedding_cache_path(slug, s, "pretrained", mods)
+            if a.negatives != "uniform":
+                cache = cache.with_name(
+                    cache.name.replace(".npz", f"_{a.negatives}.npz"))
+            if not cache.exists():
+                print(f"  [skip] {lbl}: no cached embedding for the "
+                      f"{a.negatives} point set")
+                continue
+            d = np.load(cache, allow_pickle=False)
             want = embedding_fingerprint(enc, "pretrained", mods, rows, cols, y)
             if str(d["fingerprint"]) != want:
-                raise SystemExit(f"{slug} {lbl}: cache is for another point set")
+                print(f"  [skip] {lbl}: cached embedding describes another "
+                      f"point set")
+                continue
             emb[lbl] = d["embeddings"].astype(np.float32)
 
         report[slug] = {"basin": name, "sizes": {}}
@@ -105,10 +121,13 @@ def main() -> None:
 
             r_xy = fit_auc(XY, y, folds)
             r_a = fit_auc(X17, y, folds)
-            r_p = fit_auc(emb["Prithvi"], y, folds)
-            r_t = fit_auc(emb["TM+DEM"], y, folds)
-            d_p = tci([x - z for x, z in zip(r_p, r_a)])
-            d_t = tci([x - z for x, z in zip(r_t, r_a)])
+            nan5 = [float("nan")] * len(folds)
+            r_p = fit_auc(emb["Prithvi"], y, folds) if "Prithvi" in emb else nan5
+            r_t = fit_auc(emb["TM+DEM"], y, folds) if "TM+DEM" in emb else nan5
+            d_p = tci([x - z for x, z in zip(r_p, r_a)]) if "Prithvi" in emb \
+                else (float("nan"),) * 3 + (False,)
+            d_t = tci([x - z for x, z in zip(r_t, r_a)]) if "TM+DEM" in emb \
+                else (float("nan"),) * 3 + (False,)
             print(f"{S*30/1000:5.0f}km {nb:5d} {np.mean(r_xy):8.3f} "
                   f"{np.mean(r_a):8.3f} {np.mean(r_p):9.3f} {np.mean(r_t):8.3f} "
                   f"{d_p[0]:+7.3f}[{d_p[1]:+.3f},{d_p[2]:+.3f}]"
@@ -125,7 +144,8 @@ def main() -> None:
                                       "significant": d_t[3]},
             }
 
-    dst = RESULTS / "coordinate_floor.json"
+    suffix = "" if a.negatives == "uniform" else f"_{a.negatives}"
+    dst = RESULTS / f"coordinate_floor{suffix}.json"
     dst.write_text(json.dumps(report, indent=2))
     print(f"\n[done] wrote {dst.name}")
 
