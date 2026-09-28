@@ -11,7 +11,7 @@ Output: paper/data/s2_composites/{basin}_s2l2a_{year}.tif
 Implementation:
   - Search STAC for Sentinel-2 L2A scenes intersecting basin polygon
     over 2023, with eo:cloud_cover < CLOUD_THRESHOLD.
-  - Lazy stackstac stack, then median across time (cloud-robust composite).
+  - Lazy stackstac stack, then mean across time (see note below: median needs the full timeseries in memory).
   - Reproject/clip to match the basin DEM grid exactly (same CRS, transform).
 
 This script reuses the basin_polygons of the postdoc paper1 pipeline
@@ -72,11 +72,22 @@ def load_dem_grid(basin_id):
         return src.transform, src.crs, src.height, src.width, src.bounds
 
 
-def search_items(client, bbox_wgs84, max_items=30, year=DEFAULT_YEAR, months=None):
-    """Return up to max_items least-cloudy S2 L2A items intersecting bbox.
+def search_items(client, bbox_wgs84, max_items=30, year=DEFAULT_YEAR, months=None,
+                 per_tile=True):
+    """Return least-cloudy S2 L2A items intersecting bbox, balanced across tiles.
 
     `months` restricts acquisitions to a (first, last) inclusive month range, so
     two composites from different years can be matched seasonally.
+
+    `per_tile` takes max_items from EACH Sentinel-2 MGRS tile rather than
+    max_items from the basin as a whole. Taking them globally is a bug when a
+    basin spans several tiles, because eo:cloud_cover is a per-scene property and
+    the clearest scenes concentrate in the driest tiles: sorting the pooled list
+    and truncating it leaves entire tiles with no contributing scene, and the
+    temporal mean is then empty across them. In Maule this emptied four of
+    eleven tiles, one of which (19HCA) had 150 qualifying scenes and contributed
+    none, removing 27% of the basin along straight MGRS boundaries. Balancing the
+    draw per tile costs nothing and is what the composite was meant to do.
     """
     search = client.search(
         collections=["sentinel-2-l2a"],
@@ -88,8 +99,20 @@ def search_items(client, bbox_wgs84, max_items=30, year=DEFAULT_YEAR, months=Non
     if months:
         lo, hi = months
         items = [it for it in items if lo <= it.datetime.month <= hi]
-    items_sorted = sorted(items, key=lambda it: it.properties.get("eo:cloud_cover", 100.0))
-    return items_sorted[:max_items]
+    cloud = lambda it: it.properties.get("eo:cloud_cover", 100.0)
+    if not per_tile:
+        return sorted(items, key=cloud)[:max_items]
+
+    by_tile = {}
+    for it in items:
+        by_tile.setdefault(it.properties.get("s2:mgrs_tile", "?"), []).append(it)
+    out = []
+    for tile in sorted(by_tile):
+        picked = sorted(by_tile[tile], key=cloud)[:max_items]
+        out.extend(picked)
+        print(f"    tile {tile}: {len(by_tile[tile]):>4} qualifying, {len(picked):>3} used "
+              f"(cloud {cloud(picked[0]):.1f}-{cloud(picked[-1]):.1f}%)")
+    return out
 
 
 def baseline_offset(item):
@@ -108,7 +131,18 @@ def baseline_offset(item):
 
 
 def build_composite(basin_id, year=DEFAULT_YEAR, months=None,
-                    max_items=30, harmonize=False, suffix=""):
+                    max_items=30, harmonize=False, suffix="", per_tile=True,
+                    stack_dtype="float64"):
+    """Build one per-basin annual composite.
+
+    stack_dtype bounds peak memory: the stack is (time, band, y, x) and float32
+    halves it against the stackstac default. The output is uint16 either way,
+    and the mean of at most a few dozen values below 2**14 DN is exact in
+    float32 (integers are exact to 2**24, and the division costs at most one
+    ulp, about 0.01 DN), so the written product is unchanged. Basins spanning
+    many MGRS tiles need it: Maule draws from eleven tiles and does not fit in
+    the headroom this machine has under float64.
+    """
     print(f"\n=== {basin_id} ===")
     t0 = perf_counter()
 
@@ -119,8 +153,11 @@ def build_composite(basin_id, year=DEFAULT_YEAR, months=None,
     print(f"  Basin bbox WGS84: {tuple(round(x, 3) for x in bbox_wgs84)}")
 
     client = get_stac_client()
-    items = search_items(client, bbox_wgs84, max_items=max_items, year=year, months=months)
-    print(f"  Found {len(items)} S2 L2A items with cloud<{CLOUD_THRESHOLD}% in {year}")
+    items = search_items(client, bbox_wgs84, max_items=max_items, year=year,
+                         months=months, per_tile=per_tile)
+    n_tiles = len({it.properties.get("s2:mgrs_tile", "?") for it in items})
+    print(f"  Using {len(items)} S2 L2A items with cloud<{CLOUD_THRESHOLD}% in {year} "
+          f"across {n_tiles} MGRS tiles")
     if not items:
         raise SystemExit("No items found")
 
@@ -135,6 +172,12 @@ def build_composite(basin_id, year=DEFAULT_YEAR, months=None,
         assets=S2_BANDS,
         chunksize=1024,
         rescale=False,    # keep raw S2 reflectance scale (×10000)
+        dtype=stack_dtype,
+        # stackstac validates with np.can_cast(type(fill_value), dtype), which
+        # inspects the Python type rather than the array dtype: a plain float NaN
+        # is float64 and a 0-d array is ndarray, and both fail against float32.
+        # It has to be a numpy scalar of the stack's own dtype.
+        fill_value=np.dtype(stack_dtype).type(np.nan),
     )
     print(f"  Stack shape (time, band, y, x): {stack.shape}")
     print(f"  Stack dtype: {stack.dtype}")
@@ -214,6 +257,11 @@ def main():
                         help="Inclusive month range 'lo-hi' (e.g. '1-6') to match "
                              "two composites seasonally.")
     parser.add_argument("--max-items", type=int, default=30)
+    parser.add_argument("--float32", action="store_true",
+                        help="build the stack in float32 to halve peak memory; "
+                             "the uint16 output is unchanged")
+    parser.add_argument("--global-draw", action="store_true",
+                        help="reproduce the pre-fix behaviour: take max-items from the\n                              basin as a whole instead of from each MGRS tile")
     parser.add_argument("--harmonize", action="store_true",
                         help="Subtract the baseline-04.00 BOA_ADD_OFFSET so that "
                              "pre- and post-2022 acquisitions share a radiometric scale.")
@@ -223,6 +271,8 @@ def main():
     months = tuple(int(x) for x in args.months.split("-")) if args.months else None
     build_composite(args.basin, year=args.year, months=months,
                     max_items=args.max_items, harmonize=args.harmonize,
+                    per_tile=not args.global_draw,
+                    stack_dtype="float32" if args.float32 else "float64",
                     suffix=args.suffix)
 
 

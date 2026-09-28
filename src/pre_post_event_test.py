@@ -41,7 +41,7 @@ from point_probes import (
 )
 from terramind_linprobe import (
     BUFFER_PX, INVENTORY_BASE, NEG_RATIO, PATCH_SIZE, SEED, SPATIAL_BLOCK_PX,
-    S2_COMPOSITE_BASE,
+    S2_COMPOSITE_BASE, lookup_pixel_features, sample_negatives,
 )
 
 BASIN = "06_rio_huasco"
@@ -92,30 +92,28 @@ def build_dataset_dated(basin, keep_years):
         excluded[r0:r1, c0:c1] = True
     excluded = excluded.ravel()
 
+    # Same in-basin, completeness-matched sampler as the benchmark. Drawing
+    # negatives from the rectangular bounding box, as this test used to,
+    # reintroduces the edge artefact the rest of the study removed: the DEM
+    # codes out-of-basin as literal 0, so those negatives carry systematically
+    # more zeros in their neighbourhood than the in-basin positives, and a
+    # context probe reads that difference directly.
     rng = np.random.default_rng(SEED)
-    half = PATCH_SIZE // 2
-    neg_rows, neg_cols = [], []
-    while len(neg_rows) < NEG_RATIO * n_pos:
-        r = int(rng.integers(half, height - half))
-        c = int(rng.integers(half, width - half))
-        if not excluded[r * width + c]:
-            neg_rows.append(r); neg_cols.append(c)
-    neg_rows, neg_cols = np.array(neg_rows), np.array(neg_cols)
+    neg_rows, neg_cols, _thr = sample_negatives(
+        dem_src, pos_rows, pos_cols, excluded, NEG_RATIO * n_pos, rng
+    )
 
     all_rows = np.concatenate([pos_rows, neg_rows])
     all_cols = np.concatenate([pos_cols, neg_cols])
     y = np.concatenate([np.ones(n_pos), np.zeros(len(neg_rows))]).astype(np.int8)
 
     with np.load(RESULTS / f"{basin}_stack.npz", allow_pickle=False) as npz:
-        X_all = npz["X"].astype(np.float32)
+        X_all = npz["X"].astype(np.float32, copy=False)
         valid_idx = npz["valid_idx"]
-    flat_to_row = {int(i): k for k, i in enumerate(valid_idx)}
-    feats = np.full((len(all_rows), X_all.shape[1]), np.nan, np.float32)
-    mask = np.zeros(len(all_rows), dtype=bool)
-    for i, fp in enumerate(all_rows * width + all_cols):
-        if int(fp) in flat_to_row:
-            feats[i] = X_all[flat_to_row[int(fp)]]
-            mask[i] = True
+    feats, mask = lookup_pixel_features(
+        X_all, valid_idx, all_rows.astype(np.int64) * width + all_cols
+    )
+    del X_all, valid_idx
     all_rows, all_cols, feats, y = all_rows[mask], all_cols[mask], feats[mask], y[mask]
 
     n_cols_blocks = (width + SPATIAL_BLOCK_PX - 1) // SPATIAL_BLOCK_PX

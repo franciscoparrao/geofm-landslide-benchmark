@@ -64,6 +64,16 @@ DEFAULT_PRITHVI_PATH = PRITHVI_PATH
 #   HLS B07 (SWIR2)       <- S2 B12  (composite index 11)
 PRITHVI_HLS_INDICES = [1, 2, 3, 8, 10, 11]
 
+# Identity of the source rasters the embeddings are computed from. It enters the
+# embedding fingerprint, so bumping it invalidates every cache. Bump it whenever
+# an input raster is rebuilt, and say what changed.
+#   "globaldraw": composites built by taking the thirty least-cloudy scenes of
+#       the whole basin, which left entire Sentinel-2 MGRS tiles with no
+#       contributing scene (27% of Maule absent along straight tile edges).
+#   "pertile": composites built by drawing the least-cloudy scenes from each
+#       MGRS tile separately (2026-09-16). Gaps fall to 0.00%, 0.00% and 3.36%.
+INPUT_GENERATION = "pertile"
+
 
 def load_events_xy(basin, raster_crs, raster_transform):
     """Return (rows, cols) of positive events in raster pixel coordinates.
@@ -365,7 +375,7 @@ def embedding_cache_path(basin, encoder_slug, init_mode, modalities):
 
 
 def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
-    """Identify the exact point set an embedding matrix was computed for.
+    """Identify the exact point set AND inputs an embedding matrix came from.
 
     Embeddings do not depend on the number of CV folds, so a run that only
     changes N_FOLDS can reuse them -- but only if the sampled points are
@@ -373,6 +383,17 @@ def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
     size, or a change to sample_negatives) must invalidate the cache, so the
     fingerprint covers both the sampling parameters and the resulting
     coordinates themselves.
+
+    For modalities that read the Sentinel-2 composite it also covers
+    INPUT_GENERATION, which identifies which build of that composite was used. Without
+    it, replacing a source raster leaves every cached embedding silently
+    reusable: the points have not moved, so the fingerprint matches, and the
+    cache answers for imagery it was never computed from. The composite rebuild
+    of September 2026 would have poisoned an entire re-run that way. It is a
+    module constant rather than a per-call argument on purpose: the fingerprint
+    is computed at thirteen sites across eleven scripts, and a parameter that
+    eleven callers must remember is a parameter that some caller will forget,
+    which reintroduces exactly the silent-reuse failure it was added to prevent.
     """
     payload = json.dumps({
         "encoder": encoder_name, "init": init_mode,
@@ -380,6 +401,12 @@ def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
         "patch_size": PATCH_SIZE, "neg_ratio": NEG_RATIO,
         "buffer_px": BUFFER_PX, "seed": SEED,
         "n_pos": int(y.sum()), "n_neg": int((y == 0).sum()),
+        # Only the Sentinel-2 composite was rebuilt, so only embeddings that
+        # read it are stale. Keying every modality to it would invalidate the
+        # DEM-only caches too, which are still valid and whose encoder is not
+        # currently installed anywhere -- an avoidable dead end.
+        **({"input_generation": INPUT_GENERATION}
+           if "S2L2A" in modalities else {}),
     }, sort_keys=True).encode()
     h = hashlib.md5(payload)
     h.update(np.ascontiguousarray(rows, dtype=np.int64).tobytes())

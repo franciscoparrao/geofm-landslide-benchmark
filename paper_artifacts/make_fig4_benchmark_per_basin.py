@@ -110,25 +110,31 @@ def main():
             sig_d = sig_marker(d_dem, key)
             sig_m = sig_marker(d_mm, key)
             sig_p = sig_marker(d_pr, key)
-            ytop = max(
-                a[k] + a_s[k], tmd[k] + tmd_s[k], tmm[k] + tmm_s[k], pr[k] + pr_s[k], 0.85
-            ) + 0.020
+            # Anchored to the floor of the axes: with the axis correctly bounded
+            # at AUC = 1, a top placement collides with the panel title wherever
+            # the bars approach the ceiling.
             ax.text(
-                x[k], ytop,
+                x[k], 0.365,
                 f"TM-D: {d_dem[f'delta_{key}_mean']:+.3f}$^{{{sig_d}}}$\n"
                 f"TM-M: {d_mm[f'delta_{key}_mean']:+.3f}$^{{{sig_m}}}$\n"
                 f"Pr-S: {d_pr[f'delta_{key}_mean']:+.3f}$^{{{sig_p}}}$",
                 ha="center", va="bottom", fontsize=6.0,
+                bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                          edgecolor="none", alpha=0.85), zorder=4,
             )
 
         ax.set_xticks(x)
-        ax.set_xticklabels([f"{nm}\n({rg})" for _, nm, rg in BASINS], fontsize=7.5)
+        ax.set_xticklabels([f"{nm}\n({rg})" for _, nm, rg in BASINS], fontsize=6.5)
         ax.set_ylabel(ylabel)
         ax.set_title(title, loc="left", fontweight="bold")
-        ax.set_ylim(0.35, 1.12)
+        ax.set_ylim(0.35, 1.0)   # AUC is bounded at 1; annotations go inside the axes
         ax.grid(axis="y", linestyle=":", linewidth=0.5, alpha=0.6, zorder=0)
         if j == 0:
-            ax.legend(loc="lower right", frameon=False, ncol=1)
+            pass  # legend is drawn once at figure level
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=4, frameon=False,
+               fontsize=7, bbox_to_anchor=(0.5, 1.04))
 
     save_fig(fig, "fig4_benchmark_per_basin")
     plt.close(fig)

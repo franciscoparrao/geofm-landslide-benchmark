@@ -407,6 +407,10 @@ def main():
     # Only meaningful for the uniform sampling the stored runs used.
     stored = {} if args.negatives == "constrained" else {
         "A_stored": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
+        # Same file as A_stored, read for its roc_B: without it the TerraMind-DEM
+        # arm would be the one pipeline whose re-encoding is never checked
+        # against the stored benchmark.
+        "TM_DEM": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
         "TM_MM": f"{basin}_terramind_linprobe_spatial_dem+s2l2a{splitter_suffix}{folds_suffix}.json",
         "PRITHVI": f"{basin}_prithvi-300m_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
     }

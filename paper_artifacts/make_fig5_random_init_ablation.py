@@ -74,6 +74,7 @@ def main():
     x = np.arange(len(FMS))
     w = 0.36
 
+    span = []
     for j, (b_slug, b_name, regime) in enumerate(BASINS):
         ax = axes[j]
         pretrained_means = []; pretrained_errs = []
@@ -127,11 +128,23 @@ def main():
         )
         ax.set_title(f"({chr(97 + j)}) {b_name}\n({regime})",
                      loc="left", fontweight="bold")
-        ax.set_ylim(-0.16, 0.18)
+        # Track every interval drawn; the limit is applied once after the loop so
+        # the three panels share a scale. A fixed window used to clip Maipo's
+        # TerraMind+DEM bars at the panel edge with no truncation marker, which
+        # reads as a shorter interval than it is.
+        for m, e in ((pretrained_means, pretrained_errs),
+                     (random_means, random_errs)):
+            for i in range(len(m)):
+                span.append(m[i] - e[0, i])
+                span.append(m[i] + e[1, i])
         ax.grid(axis="y", linestyle=":", linewidth=0.5, alpha=0.6, zorder=0)
         if j == 0:
             ax.set_ylabel(r"$\Delta$ROC  (pipeline B $-$ baseline A)")
             ax.legend(loc="upper left", frameon=False, fontsize=7)
+
+    pad = 0.08 * (max(span) - min(span))
+    for ax in axes:
+        ax.set_ylim(min(span) - pad, max(span) + pad)
 
     save_fig(fig, "fig5_random_init_ablation")
     plt.close(fig)

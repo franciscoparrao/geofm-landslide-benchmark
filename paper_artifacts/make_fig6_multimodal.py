@@ -95,23 +95,30 @@ def main():
             sig_d = fold_tci_sig(data_dem[b], f"delta_{key}")
             dm = data_mm[b][f"delta_{key}_mean"]
             sig_m = fold_tci_sig(data_mm[b], f"delta_{key}")
-            y_top = max(max(a_m[k] + a_s[k], bd_m[k] + bd_s[k], bm_m[k] + bm_s[k]), 0.85) + 0.025
-            ax.text(k, y_top,
+            # Anchored to the floor of the axes, not above the bars: with the
+            # axis correctly bounded at AUC = 1, a top placement collides with
+            # the panel title wherever the bars approach the ceiling.
+            ax.text(k, 0.415,
                     f"DEM: $\\Delta$={dd:+.3f}$^{{{sig_d}}}$\n"
                     f"MM: $\\Delta$={dm:+.3f}$^{{{sig_m}}}$",
-                    ha="center", va="bottom", fontsize=6.5)
+                    ha="center", va="bottom", fontsize=6.5,
+                    bbox=dict(boxstyle="round,pad=0.25", facecolor="white",
+                              edgecolor="none", alpha=0.85), zorder=4)
 
         ax.set_xticks(x)
         ax.set_xticklabels(
             [f"{SHORT[b]}\n({REGIME[b]})" for b in BASINS],
-            fontsize=7.5,
+            fontsize=6.5,
         )
         ax.set_ylabel(ylabel)
         ax.set_title(title, loc="left", fontsize=9, fontweight="bold")
-        ax.set_ylim(0.4, 1.1)
+        ax.set_ylim(0.4, 1.0)    # AUC is bounded at 1; annotations go inside the axes
         ax.grid(axis="y", linestyle=":", linewidth=0.5, alpha=0.6, zorder=0)
-        if j == 0:
-            ax.legend(loc="lower right", frameon=False, fontsize=7)
+    # One legend for both panels, above the axes: an in-axes legend competes with
+    # the delta annotations now that the axis is correctly bounded at AUC = 1.
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False,
+               fontsize=7, bbox_to_anchor=(0.5, 1.04))
 
     save_fig(fig, "fig6_multimodal")
     plt.close(fig)
