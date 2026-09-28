@@ -19,13 +19,13 @@ authors:
     family-names: Marín
     affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
     orcid: "https://orcid.org/TODO"
-version: 1.2.0
-date-released: 2026-09-02
+version: 1.3.0
+date-released: 2026-09-28
 license: MIT
 repository-code: "https://github.com/franciscoparrao/geofm-landslide-benchmark"
 preferred-citation:
   type: article
-  title: "Where do geospatial foundation models help? Cross-model evaluation of TerraMind and Prithvi-EO-2.0 for landslide susceptibility across the Chilean climate gradient"
+  title: "A geomorphometric baseline holds against TerraMind and Prithvi-EO-2.0: a controlled evaluation of geospatial foundation models for landslide susceptibility"
   authors:
     - given-names: Francisco
       family-names: Parra
@@ -35,6 +35,6 @@ preferred-citation:
       family-names: Bonacic
     - given-names: Mauricio
       family-names: Marín
-  journal: "Computers & Geosciences"
+  journal: "Earth Science Informatics"
   year: 2026
-  notes: "Submitted"
+  notes: "In preparation"
