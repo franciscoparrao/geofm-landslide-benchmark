@@ -1,0 +1,56 @@
+{
+ "06_rio_huasco": {
+  "A_oof": {
+   "auc": 0.9,
+   "top10": 0.666
+  },
+  "PRITHVI_oof": {
+   "auc": 0.969,
+   "top10": 0.993
+  },
+  "COORD_oof": {
+   "auc": 0.887,
+   "top10": 0.554
+  },
+  "KDE2km_oof": {
+   "auc": 0.948,
+   "top10": 0.872
+  }
+ },
+ "09_rio_maipo": {
+  "A_oof": {
+   "auc": 0.796,
+   "top10": 0.538
+  },
+  "PRITHVI_oof": {
+   "auc": 0.909,
+   "top10": 0.711
+  },
+  "COORD_oof": {
+   "auc": 0.861,
+   "top10": 0.503
+  },
+  "KDE2km_oof": {
+   "auc": 0.897,
+   "top10": 0.682
+  }
+ },
+ "11_rio_maule": {
+  "A_oof": {
+   "auc": 0.874,
+   "top10": 0.62
+  },
+  "PRITHVI_oof": {
+   "auc": 0.829,
+   "top10": 0.48
+  },
+  "COORD_oof": {
+   "auc": 0.799,
+   "top10": 0.41
+  },
+  "KDE2km_oof": {
+   "auc": 0.807,
+   "top10": 0.46
+  }
+ }
+}

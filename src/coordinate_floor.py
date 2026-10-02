@@ -36,7 +36,7 @@ from sklearn.model_selection import StratifiedGroupKFold
 from config import RESULTS, basin_dir
 from point_probes import build_dataset
 from terramind_linprobe import (
-    N_FOLDS, N_TREES, PRITHVI_NAME, SEED, TERRAMIND_NAME, embedding_cache_path,
+    N_FOLDS, N_TREES, PRITHVI_NAME, RUN_SUFFIX, SEED, TERRAMIND_NAME, embedding_cache_path,
     embedding_fingerprint,
 )
 
@@ -145,7 +145,7 @@ def main() -> None:
             }
 
     suffix = "" if a.negatives == "uniform" else f"_{a.negatives}"
-    dst = RESULTS / f"coordinate_floor{suffix}.json"
+    dst = RESULTS / f"coordinate_floor{suffix}{RUN_SUFFIX}.json"
     dst.write_text(json.dumps(report, indent=2))
     print(f"\n[done] wrote {dst.name}")
 

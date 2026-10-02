@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import warnings
 from pathlib import Path
 from time import perf_counter
@@ -38,6 +39,13 @@ from config import (
 PATCH_SIZE = 224
 NEG_RATIO = 5
 BUFFER_PX = PATCH_SIZE // 2  # 112 px = 3360 m, prevents patch-content leak
+# Sensitivity to the negative-exclusion window (review R2, 2026-09-29): the
+# 3.36 km window keeps every negative out of the neighbourhood of every
+# positive, which can make the classes separable by position alone. Setting
+# GEOFM_BUFFER_PX re-runs the design with a smaller window; those runs write
+# caches and results under a _buf<px> suffix so the primary ones are untouched.
+BUFFER_PX = int(os.environ.get("GEOFM_BUFFER_PX") or BUFFER_PX)
+RUN_SUFFIX = "" if BUFFER_PX == PATCH_SIZE // 2 else f"_buf{BUFFER_PX}"
 N_FOLDS = 5
 N_BOOTSTRAP = 1000
 N_TREES = 300
@@ -73,6 +81,23 @@ PRITHVI_HLS_INDICES = [1, 2, 3, 8, 10, 11]
 #   "pertile": composites built by drawing the least-cloudy scenes from each
 #       MGRS tile separately (2026-09-16). Gaps fall to 0.00%, 0.00% and 3.36%.
 INPUT_GENERATION = "pertile"
+
+# How TerraMind's inputs are prepared. It enters the fingerprint of every
+# TerraMind embedding, so changing it invalidates those caches.
+#   (absent): DEM in metres and Sentinel-2 divided by 10,000, on the belief that
+#       the backbone normalises its own inputs. It does not: terratorch's
+#       TerraMindViT.forward applies no standardisation, and the pretraining
+#       statistics are used only by the generation wrappers, with
+#       standardize=False by default. The encoder saw raw metres where it was
+#       trained on z-scores.
+#   "zscore+offset": the pretraining convention (2026-09-28). Sentinel-2 L2A
+#       from processing baseline 04.00 onward carries BOA_ADD_OFFSET = 1000 DN;
+#       TerraMesh removed it from post-2022 data before computing its
+#       statistics, so it is subtracted here from every valid pixel, and both
+#       modalities are then standardised with terratorch's v1 pretraining mean
+#       and standard deviation.
+TERRAMIND_INPUT = "zscore+offset"
+S2_BOA_OFFSET = 1000.0
 
 
 def load_events_xy(basin, raster_crs, raster_transform):
@@ -210,19 +235,64 @@ def sample_negatives(dem_src, pos_rows, pos_cols, excluded, n_target, rng,
     return np.array(rows), np.array(cols), thr
 
 
+_TM_STATS = None
+
+
+def terramind_norm_stats():
+    """TerraMind v1 pretraining mean/std, read from terratorch itself.
+
+    Read from the library rather than copied into this file, so the values are
+    the ones the installed model version was trained with.
+    """
+    global _TM_STATS
+    if _TM_STATS is None:
+        from terratorch.models.backbones.terramind.model.terramind_register import (
+            v1_pretraining_mean as mean, v1_pretraining_std as std,
+        )
+        _TM_STATS = {
+            "DEM": (np.float32(mean["untok_dem@224"][0]),
+                    np.float32(std["untok_dem@224"][0])),
+            "S2L2A": (np.array(mean["untok_sen2l2a@224"], np.float32)[None, :, None, None],
+                      np.array(std["untok_sen2l2a@224"], np.float32)[None, :, None, None]),
+        }
+    return _TM_STATS
+
+
+def standardize_terramind(dem_patches, s2_patches):
+    """Put raw patches on TerraMind's pretraining scale.
+
+    dem_patches in metres; s2_patches in raw L2A DN (12 bands, B10 excluded).
+    A pixel whose twelve bands are all zero is composite nodata: it keeps the
+    value 0 DN, as the Prithvi path does, rather than being offset to -1000.
+    """
+    st = terramind_norm_stats()
+    dem = None
+    if dem_patches is not None:
+        m, sd = st["DEM"]
+        dem = ((dem_patches - m) / sd).astype(np.float32)
+    s2 = None
+    if s2_patches is not None:
+        nodata = (s2_patches == 0).all(axis=1, keepdims=True)
+        s2 = np.where(nodata, 0.0, s2_patches - S2_BOA_OFFSET)
+        m, sd = st["S2L2A"]
+        s2 = ((s2 - m) / sd).astype(np.float32)
+    return dem, s2
+
+
 def build_encoder(name, pretrained, modalities, prithvi_path=None):
     """Build a backbone and return (model, kind, embed_dim, norm_stats).
 
     kind is "terramind" or "prithvi". For Prithvi, norm_stats is a dict with
     'mean' and 'std' (per-band, raw-reflectance scale) used at encode time.
-    For TerraMind, norm_stats is None (the model handles normalization).
+    For TerraMind it holds the v1 pretraining statistics per modality; the
+    backbone does not standardise its inputs (see TERRAMIND_INPUT).
     """
     if name == TERRAMIND_NAME:
         from terratorch import BACKBONE_REGISTRY
         model = BACKBONE_REGISTRY.build(
             name, pretrained=pretrained, modalities=modalities,
         )
-        return model, "terramind", TERRAMIND_EMBED_DIM, None
+        return model, "terramind", TERRAMIND_EMBED_DIM, terramind_norm_stats()
 
     if name == PRITHVI_NAME:
         if prithvi_path is None:
@@ -303,6 +373,8 @@ def encode_patches(kind, model, embed_dim, dem_patches=None,
                    norm_stats=None, batch_size=BATCH_SIZE):
     """Dispatch to the encoder-specific implementation."""
     if kind == "terramind":
+        # Expects raw inputs (metres, L2A DN), exactly as encode_streaming does.
+        dem_patches, s2_patches = standardize_terramind(dem_patches, s2_patches)
         return _encode_terramind(model, dem_patches, s2_patches, embed_dim, batch_size)
     if kind == "prithvi":
         assert s2_hls_patches is not None and norm_stats is not None
@@ -329,8 +401,14 @@ def encode_streaming(kind, model, embed_dim, rows, cols, dem_src=None,
         dem_p = extract_patches(dem_src, r, c) if dem_src is not None else None
         s2_p = None
         if s2_src is not None:
-            s2_p = extract_patches_s2(s2_src, r, c,
-                                      band_indices=s2_band_indices, scale=s2_scale)
+            # TerraMind is always read in raw DN whatever the caller passes:
+            # standardisation needs the unscaled values, and a caller that
+            # forgets to change its scale must not be able to undo it.
+            s2_p = extract_patches_s2(
+                s2_src, r, c, band_indices=s2_band_indices,
+                scale=1.0 if kind == "terramind" else s2_scale)
+        if kind == "terramind":
+            dem_p, s2_p = standardize_terramind(dem_p, s2_p)
         if kind == "prithvi":
             out[sl] = _encode_prithvi(model, s2_p, embed_dim, BATCH_SIZE,
                                       norm_stats, use_bf16=False)
@@ -371,7 +449,7 @@ def lookup_pixel_features(X_all, valid_idx, flat_positions):
 def embedding_cache_path(basin, encoder_slug, init_mode, modalities):
     return (RESULTS / "_embcache" /
             f"{basin}_{encoder_slug}_{init_mode}_"
-            f"{'+'.join(sorted(modalities)).lower()}.npz")
+            f"{'+'.join(sorted(modalities)).lower()}{RUN_SUFFIX}.npz")
 
 
 def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
@@ -407,6 +485,8 @@ def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
         # currently installed anywhere -- an avoidable dead end.
         **({"input_generation": INPUT_GENERATION}
            if "S2L2A" in modalities else {}),
+        **({"terramind_input": TERRAMIND_INPUT}
+           if encoder_name == TERRAMIND_NAME else {}),
     }, sort_keys=True).encode()
     h = hashlib.md5(payload)
     h.update(np.ascontiguousarray(rows, dtype=np.int64).tobytes())
@@ -631,7 +711,7 @@ def main() -> None:
             dem_src=dem_src if needs_dem else None,
             s2_src=s2_src,
             s2_band_indices=None if encoder_kind == "terramind" else PRITHVI_HLS_INDICES,
-            s2_scale=10000.0 if encoder_kind == "terramind" else 1.0,
+            s2_scale=1.0,
             norm_stats=norm_stats,
         )
         print(f"[fase2] embeddings.shape={embeddings.shape} elapsed={perf_counter() - t0:.1f}s")
@@ -761,7 +841,7 @@ def main() -> None:
     # any other fold count is a secondary variant and gets its own file.
     folds_suffix = "" if n_folds == N_FOLDS else f"_k{n_folds}"
     splitter_suffix = "" if args.splitter == "group" else "_sgkf"
-    out_json = RESULTS / f"{basin}_{encoder_slug}_linprobe_{cv_suffix}{init_suffix}{modality_suffix}{splitter_suffix}{folds_suffix}.json"
+    out_json = RESULTS / f"{basin}_{encoder_slug}_linprobe_{cv_suffix}{init_suffix}{modality_suffix}{splitter_suffix}{folds_suffix}{RUN_SUFFIX}.json"
     out_json.write_text(json.dumps(summary, indent=2))
     print(f"[fase2] wrote {out_json.name}")
 

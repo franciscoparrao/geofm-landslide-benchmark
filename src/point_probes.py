@@ -33,6 +33,7 @@ from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
 from config import BASINS, RESULTS, basin_dir, feature_paths, LOG_TRANSFORM
 from terramind_linprobe import (
     BUFFER_PX,
+    RUN_SUFFIX,
     DEFAULT_PRITHVI_PATH,
     NEG_RATIO,
     PATCH_SIZE,
@@ -255,7 +256,7 @@ def fm_embeddings(basin, rows, cols, y, prithvi_path, which="all",
         else:
             path = (RESULTS / "_embcache" /
                     f"{basin}_{slug}_pretrained_"
-                    f"{'+'.join(sorted(modalities)).lower()}_{negatives}.npz")
+                    f"{'+'.join(sorted(modalities)).lower()}_{negatives}{RUN_SUFFIX}.npz")
             fp = embedding_fingerprint(encoder_name, f"pretrained:{negatives}",
                                        modalities, rows, cols, y)
         emb = load_cached_embeddings(path, fp)
@@ -277,7 +278,7 @@ def fm_embeddings(basin, rows, cols, y, prithvi_path, which="all",
         print("[fm] encoding TerraMind DEM+S2L2A")
         model, kind, dim, ns = build_encoder(TERRAMIND_NAME, True, ["DEM", "S2L2A"])
         emb = encode_streaming(kind, model, dim, rows, cols,
-                               dem_src=dem_src, s2_src=s2_src, s2_scale=10000.0)
+                               dem_src=dem_src, s2_src=s2_src)
         del model
         return emb
 
@@ -406,13 +407,13 @@ def main():
     # reproduction check + paired comparisons vs stored FM runs (same folds).
     # Only meaningful for the uniform sampling the stored runs used.
     stored = {} if args.negatives == "constrained" else {
-        "A_stored": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
+        "A_stored": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}{RUN_SUFFIX}.json",
         # Same file as A_stored, read for its roc_B: without it the TerraMind-DEM
         # arm would be the one pipeline whose re-encoding is never checked
         # against the stored benchmark.
-        "TM_DEM": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
-        "TM_MM": f"{basin}_terramind_linprobe_spatial_dem+s2l2a{splitter_suffix}{folds_suffix}.json",
-        "PRITHVI": f"{basin}_prithvi-300m_linprobe_spatial{splitter_suffix}{folds_suffix}.json",
+        "TM_DEM": f"{basin}_terramind_linprobe_spatial{splitter_suffix}{folds_suffix}{RUN_SUFFIX}.json",
+        "TM_MM": f"{basin}_terramind_linprobe_spatial_dem+s2l2a{splitter_suffix}{folds_suffix}{RUN_SUFFIX}.json",
+        "PRITHVI": f"{basin}_prithvi-300m_linprobe_spatial{splitter_suffix}{folds_suffix}{RUN_SUFFIX}.json",
     }
     for key, fname in stored.items():
         p = RESULTS / fname
@@ -431,7 +432,7 @@ def main():
             }
 
     suffix = "_constrained" if args.negatives == "constrained" else ""
-    out = RESULTS / f"{basin}_point_probes{suffix}{splitter_suffix}{folds_suffix}.json"
+    out = RESULTS / f"{basin}_point_probes{suffix}{splitter_suffix}{folds_suffix}{RUN_SUFFIX}.json"
     out.write_text(json.dumps(results, indent=2))
     print(f"[done] wrote {out.name} in {perf_counter() - t0:.0f}s total")
 

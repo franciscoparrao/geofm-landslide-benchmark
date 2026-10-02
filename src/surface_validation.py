@@ -229,7 +229,8 @@ def rate_curve(area_scores, event_scores, cell_km2):
             "density_per_100km2": 100 * e_k / (a_k * cell_km2) if a_k else None,
             "density_ratio": (e_k / n_ev) / (a_k / n_area) if a_k else None,
         })
-    ratios = [c["density_ratio"] for c in classes]
+    # An empty class (possible when ties fill a quantile) has no ratio.
+    ratios = [c["density_ratio"] for c in classes if c["density_ratio"] is not None]
     return {
         "auc": auc, "n_area_cells": n_area, "n_events": n_ev,
         "top10_capture": top_share(0.10), "top20_capture": top_share(0.20),
