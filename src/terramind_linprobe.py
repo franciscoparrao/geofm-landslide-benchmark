@@ -99,6 +99,22 @@ INPUT_GENERATION = "pertile"
 TERRAMIND_INPUT = "zscore+offset"
 S2_BOA_OFFSET = 1000.0
 
+# Same correction for Prithvi, which is pretrained on HLS: harmonised surface
+# reflectance with no BOA_ADD_OFFSET. Absent = raw L2A DN with the 1000 DN
+# offset of baseline 04.00 left in (0.44-0.95 sd per band against Prithvi's
+# own statistics). "offset" (2026-10-04): subtracted from valid pixels before
+# Prithvi's mean/std normalisation. Enters the Prithvi fingerprint.
+PRITHVI_INPUT = "offset"
+
+
+def remove_boa_offset(patches):
+    """Subtract BOA_ADD_OFFSET from valid pixels of (n, bands, h, w) raw DN.
+
+    A pixel whose bands are all zero is composite nodata and keeps 0.
+    """
+    nodata = (patches == 0).all(axis=1, keepdims=True)
+    return np.where(nodata, 0.0, patches - S2_BOA_OFFSET).astype(np.float32)
+
 
 def load_events_xy(basin, raster_crs, raster_transform):
     """Return (rows, cols) of positive events in raster pixel coordinates.
@@ -272,8 +288,7 @@ def standardize_terramind(dem_patches, s2_patches):
         dem = ((dem_patches - m) / sd).astype(np.float32)
     s2 = None
     if s2_patches is not None:
-        nodata = (s2_patches == 0).all(axis=1, keepdims=True)
-        s2 = np.where(nodata, 0.0, s2_patches - S2_BOA_OFFSET)
+        s2 = remove_boa_offset(s2_patches)
         m, sd = st["S2L2A"]
         s2 = ((s2 - m) / sd).astype(np.float32)
     return dem, s2
@@ -355,7 +370,7 @@ def _encode_prithvi(model, s2_hls_patches, embed_dim, batch_size,
     model = model.to(dtype)
     t0 = perf_counter()
     for i in range(0, n, batch_size):
-        batch = (s2_hls_patches[i:i + batch_size] - mean) / std
+        batch = (remove_boa_offset(s2_hls_patches[i:i + batch_size]) - mean) / std
         x = torch.from_numpy(batch).to(dtype)
         with torch.no_grad():
             feats = model.forward_features(x)
@@ -487,6 +502,8 @@ def embedding_fingerprint(encoder_name, init_mode, modalities, rows, cols, y):
            if "S2L2A" in modalities else {}),
         **({"terramind_input": TERRAMIND_INPUT}
            if encoder_name == TERRAMIND_NAME else {}),
+        **({"prithvi_input": PRITHVI_INPUT}
+           if encoder_name == PRITHVI_NAME else {}),
     }, sort_keys=True).encode()
     h = hashlib.md5(payload)
     h.update(np.ascontiguousarray(rows, dtype=np.int64).tobytes())

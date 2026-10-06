@@ -88,7 +88,11 @@ def encode(basin: str, patch_dir: Path, out_dir: Path, prithvi_path: str,
             sl = slice(i, min(i + batch_size, n))
             # uint16 -> float32 on device, then the model's own normalisation
             x = torch.from_numpy(np.ascontiguousarray(patches[sl])).to(device)
-            x = (x.to(torch.float32) - mean) / std
+            x = x.to(torch.float32)
+            # BOA_ADD_OFFSET removed from valid pixels (PRITHVI_INPUT in
+            # terramind_linprobe.py): Prithvi is pretrained on offset-free HLS.
+            x = torch.where((x > 0).any(dim=1, keepdim=True), x - 1000.0, x)
+            x = (x - mean) / std
             feats = model.forward_features(x)
             if not isinstance(feats, (list, tuple)):
                 feats = [feats]

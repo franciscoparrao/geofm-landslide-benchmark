@@ -122,7 +122,10 @@ def run_fold(fold, patches, y, folds, norm, args, device):
 
     def prep(ix):
         x = torch.from_numpy(np.ascontiguousarray(patches[ix])).to(device)
-        return (x.to(torch.float32) - mean) / std
+        x = x.to(torch.float32)
+        # BOA_ADD_OFFSET removed from valid pixels, as in _encode_prithvi.
+        x = torch.where((x > 0).any(dim=1, keepdim=True), x - 1000.0, x)
+        return (x - mean) / std
 
     best_auc, best_state, bad = -1.0, None, 0
     for ep in range(args.epochs):

@@ -25,7 +25,7 @@ license: MIT
 repository-code: "https://github.com/franciscoparrao/geofm-landslide-benchmark"
 preferred-citation:
   type: article
-  title: "A geomorphometric baseline holds against TerraMind and Prithvi-EO-2.0: a controlled evaluation of geospatial foundation models for landslide susceptibility"
+  title: "What survives an audit: evaluating geospatial foundation models for landslide susceptibility against a geomorphometric baseline"
   authors:
     - given-names: Francisco
       family-names: Parra

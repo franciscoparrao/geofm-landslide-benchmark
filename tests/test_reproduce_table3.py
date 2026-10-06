@@ -38,9 +38,11 @@ GENERATOR = ROOT / "paper_artifacts" / "make_tab3_benchmark.py"
 # The two cells the manuscript's abstract and conclusions rest on. If a
 # dependency bump moves these, the paper's claims move with them and the
 # authors need to know before a reader does.
+# Moved on 2026-10-05 from +0.124 / -0.085 when the 1000 DN BOA offset was
+# removed from Prithvi's inputs (PRITHVI_INPUT in src/terramind_linprobe.py).
 HEADLINE = {
-    ("Maipo", "Prithvi-EO-2.0+S2"): "+0.124",
-    ("Maule", "Prithvi-EO-2.0+S2"): "-0.085",
+    ("Maipo", "Prithvi-EO-2.0+S2"): "+0.127",
+    ("Maule", "Prithvi-EO-2.0+S2"): "-0.071",
 }
 
 
