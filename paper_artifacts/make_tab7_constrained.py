@@ -75,12 +75,19 @@ def apply_wording(text, n=None):
     return text
 
 
+# The 5-fold table is in the main text and can cross-reference it; the 10-fold
+# variant is in the supplement, where a \ref to the main text cannot resolve.
+SECREF = r"Section~\ref{sec:methods:audit}" if not VARIANT else "Section 3.4 of the main text"
+
+
 def main():
     lines = [
         r"\begin{table*}",
         r"\centering",
-        r"\caption{Constrained-negative sensitivity: manual pipelines re-run with negatives restricted to the positives' slope envelope ($\geq$ 10th percentile of slope at positive locations; Section~\ref{sec:methods:pointprobes}), including all three foundation-model pipelines re-encoded in the same environment. AUC ROC with fold-level paired $95\%$ $t$-intervals of the difference against A on the same (stratified) folds; $^{*}$: interval excludes zero. AUC PR of A is reported per basin to show the hardening of the task relative to uniform sampling.}",
-        r"\label{tab:constrained}",
+        r"\caption{Constrained-negative sensitivity: manual pipelines re-run with negatives restricted to the positives' slope envelope ($\geq$ 10th percentile of slope at positive locations; " + SECREF + r"), including all three foundation-model pipelines re-encoded in the same environment. AUC ROC with fold-level paired $95\%$ $t$-intervals of the difference against A on the same (stratified) folds; $^{*}$: interval excludes zero. AUC PR of A is reported per basin to show the hardening of the task relative to uniform sampling.}",
+        # The 10-fold variant lives in the supplement next to the 5-fold table's
+        # document, so it needs its own label.
+        r"\label{tab:constrained" + VARIANT.replace("_", "") .replace("k", "_k") + "}",
         r"\scriptsize",
         r"\setlength{\tabcolsep}{3pt}",
         r"\begin{tabular}{llcc}",

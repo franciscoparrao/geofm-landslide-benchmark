@@ -19,8 +19,8 @@ authors:
     family-names: Marín
     affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
     orcid: "https://orcid.org/TODO"
-version: 1.3.0
-date-released: 2026-09-28
+version: 1.4.0
+date-released: 2026-10-09
 license: MIT
 repository-code: "https://github.com/franciscoparrao/geofm-landslide-benchmark"
 preferred-citation:

@@ -2,16 +2,20 @@
 
 Reproducibility package for:
 
-> **Where do geospatial foundation models help? Cross-model evaluation of
-> TerraMind and Prithvi-EO-2.0 for landslide susceptibility across the Chilean
-> climate gradient.** Parra, F., Gil-Costa, V., Bonacic, C., Marín, M.
-> Submitted to *Computers & Geosciences*.
+> **What survives an audit: evaluating geospatial foundation models for
+> landslide susceptibility against a geomorphometric baseline.** Parra, F.,
+> Gil-Costa, V., Bonacic, C., Marín, M. In preparation for *Earth Science
+> Informatics*.
 
 The package implements a cross-FM linear-probe benchmark with a
 random-initialization ablation and point-probe controls (context-matched
 manual baselines; post-event spectral scar probe; constrained-negative
 sensitivity), evaluated under spatial-block cross-validation with a
-fold-level paired *t*-inference.
+fold-level paired *t*-inference and the Nadeau–Bengio correction. Since v1.4.0
+it also ships the audit re-analyses: a positional floor on the benchmark folds
+for every pipeline, the range of spatial dependence against the block size, the
+variance of the negative draw and of the block-grid placement, and readers
+tuned by nested spatial cross-validation.
 
 ## Layout
 
@@ -27,6 +31,12 @@ src/                      benchmark pipeline
   pre_post_event_test.py  pre-/post-event composite test of the scar caveat (Huasco):
                           a 2016 composite predates the 2017+2020 events, so swapping
                           only the composite isolates post-event signal
+  floor_benchmark_folds.py  positional floor (coordinates-only forest) on the benchmark
+                          folds for every pipeline, plus the A+elev arm
+  dependence_range.py     variograms of residuals, labels and covariates (range vs block)
+  resampling_variance.py  offsets: 9 placements of the block grid;
+                          draws: fresh negatives (--n-draws, --encode, --basin)
+  tuned_reader.py         RF / gradient boosting / logistic tuned by nested spatial CV
   build_stack.py          17-layer geomorphometric feature stack -> {basin}_stack.npz
   inventory_temporal_analysis.py  trigger/temporal composition of the inventories
   pca_kmeans_baseline.py, umap_hdbscan.py, select_k.py,
@@ -62,8 +72,8 @@ TerraMind v1-tiny encodes a basin in about one minute.
 
 ### Tables and figures, without re-running anything
 
-`results/` ships the per-fold result files the paper reports (121 JSON, under
-1 MB), so every table and figure regenerates offline, with no imagery download,
+`results/` ships the per-fold result files the paper reports (191 JSON, about
+1.3 MB), so every table and figure regenerates offline, with no imagery download,
 no GPU and no model weights:
 
 ```bash
@@ -149,6 +159,33 @@ afterwards and it will tell you whether any published number moved.
    and/or `_k<folds>` suffix, so no variant can overwrite the primary run.
    `make_fold_ladder.py` also reports how much of the narrowing at 10 folds is
    the mechanical `t(df)/sqrt(n)` factor rather than added information.
+
+9. Audit re-analyses (Tables of the positional floor and the dependence range,
+   the Maule controls table, the audit figures, Supplement S5). All run on CPU
+   from the cached embeddings, except `--encode`, which encodes the new
+   negatives of each draw (about one point per second for Prithvi on CPU).
+   ```bash
+   python src/floor_benchmark_folds.py                # -> floor_benchmark_folds.json
+   python src/dependence_range.py                     # -> dependence_range.json
+   python src/resampling_variance.py offsets          # -> resampling_offsets.json
+   python src/resampling_variance.py draws --n-draws 20
+   python src/resampling_variance.py draws --n-draws 10 --encode --basin 11_rio_maule
+   python src/tuned_reader.py --basin 11_rio_maule    # -> 11_rio_maule_tuned_reader.json
+   python paper_artifacts/make_tab_floor.py
+   python paper_artifacts/make_tab_range.py
+   python paper_artifacts/make_tab_controls.py
+   python paper_artifacts/make_fig_audit.py
+   ```
+   `GEOFM_N_JOBS` and `GEOFM_TORCH_THREADS` cap the cores the forests and the
+   encoders use. `make_fig_audit.py` also reads the per-fold files of the three
+   earlier input-pipeline stages, shipped under `results/_globaldraw/`,
+   `results/_unstandardized/` and `results/_prithvi_offset/`.
+
+   The transformer-block sweep, low-rank adaptation, the pre-/post-event test
+   and Prithvi's susceptibility surfaces were computed before Prithvi's 1000 DN
+   input offset was removed. Their result files are kept for traceability, but
+   the manuscript does not report them until they are regenerated on corrected
+   inputs. The baseline surfaces and the positional references are reported.
 
 All seeds are fixed (42; per-fold seeds 42+fold). Outputs are standardized
 JSON files per (basin, encoder, initialization) cell.

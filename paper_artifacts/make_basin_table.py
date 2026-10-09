@@ -170,7 +170,9 @@ def main():
         r"southward, as the transect design assumes. "
         r"Positive landslide events ($n_+$) include both rainfall- and "
         r"seismic-triggered events from SERNAGEOMIN and the Maule 2010 "
-        r"inventory after spatial validity filtering.}",
+        r"inventory retained by the coordinate-precision filter; one Maipo and "
+        r"one Maule event are later dropped from the benchmark because a layer "
+        r"has no finite value at the point, which leaves 348 and 210.}",
         r"\label{tab:basins}",
         r"\small",
         r"\begin{tabular}{cllrrrrrrr}",

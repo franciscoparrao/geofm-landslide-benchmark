@@ -54,10 +54,12 @@ HLS_BANDS_1BASED = [2, 3, 4, 9, 11, 12]   # B02,B03,B04,B8A,B11,B12
 B04_1BASED, B08_1BASED, B8A_1BASED, B12_1BASED = 4, 8, 9, 12
 
 
-def build_dataset(basin, negatives="uniform"):
+def build_dataset(basin, negatives="uniform", seed=SEED):
     """Reproduce the benchmark dataset: rows/cols, labels, pixel features, blocks.
 
-    negatives="uniform" reproduces the benchmark sampling exactly.
+    negatives="uniform" reproduces the benchmark sampling exactly; another
+    seed draws a fresh set of negatives under the same rules (positives and
+    their order are unchanged).
     negatives="constrained" restricts negative candidates to the positives'
     morphometric envelope (slope >= 10th percentile of slope at positives),
     the hard-task sensitivity variant.
@@ -81,7 +83,7 @@ def build_dataset(basin, negatives="uniform"):
         excluded[r0:r1, c0:c1] = True
     excluded = excluded.ravel()
 
-    rng = np.random.default_rng(SEED)
+    rng = np.random.default_rng(seed)
     n_neg_target = NEG_RATIO * n_pos
     half = PATCH_SIZE // 2
     if negatives == "uniform":
