@@ -6,19 +6,16 @@ authors:
   - given-names: Francisco
     family-names: Parra
     affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
-    orcid: "https://orcid.org/TODO"
+    orcid: "https://orcid.org/0009-0006-0435-1854"
   - given-names: Verónica
     family-names: Gil-Costa
     affiliation: "Universidad Nacional de San Luis, San Luis, Argentina"
-    orcid: "https://orcid.org/TODO"
   - given-names: Carolina
     family-names: Bonacic
     affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
-    orcid: "https://orcid.org/TODO"
   - given-names: Mauricio
     family-names: Marín
     affiliation: "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
-    orcid: "https://orcid.org/TODO"
 version: 1.4.0
 date-released: 2026-10-09
 license: MIT
