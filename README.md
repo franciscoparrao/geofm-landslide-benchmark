@@ -7,6 +7,10 @@ Reproducibility package for:
 > Gil-Costa, V., Bonacic, C., Marín, M. In preparation for *Earth Science
 > Informatics*.
 
+Archived with the derived datasets at Zenodo:
+[10.5281/zenodo.23326366](https://doi.org/10.5281/zenodo.23326366) (v1.4.0;
+`data/ZENODO_DEPOSIT.md` lists what the deposit holds).
+
 The package implements a cross-FM linear-probe benchmark with a
 random-initialization ablation and point-probe controls (context-matched
 manual baselines; post-event spectral scar probe; constrained-negative

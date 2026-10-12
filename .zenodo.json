@@ -1,10 +1,10 @@
 {
   "title": "geofm-landslide-benchmark: cross-model evaluation protocol and derived datasets for geospatial foundation models in landslide susceptibility",
-  "description": "Reproducibility package for 'What survives an audit: evaluating geospatial foundation models for landslide susceptibility against a geomorphometric baseline' (in preparation for Earth Science Informatics). Includes the cross-FM benchmark with random-initialization ablation and point-probe controls (context-matched manual baselines, spectral scar probe, constrained-negative sensitivity, and a pre-/post-event composite test of scar leakage), the control arms (ground motion, movement typology, geology, climate), the audit re-analyses (positional floor on the benchmark folds for every pipeline, range of spatial dependence against the block size, variance of the negative draw and of the block-grid placement, readers tuned by nested spatial cross-validation), susceptibility surfaces validated with success- and prediction-rate curves on out-of-fold surfaces (the transformer-block sweep, low-rank adaptation and Prithvi surfaces predate the input-offset correction and are kept only for traceability), the table/figure generators, and the derived datasets: 17-layer geomorphometric feature stacks (npz) for five Chilean basins, Sentinel-2 L2A composites (GeoTIFF) built per MGRS tile, including a season-matched, radiometrically harmonized 2016/2023 pair for the pre-/post-event test, sampled benchmark points with spatial-block ids (CSV), and per-fold result files (JSON).",
+  "description": "Reproducibility package for 'What survives an audit: evaluating geospatial foundation models for landslide susceptibility against a geomorphometric baseline' (in preparation for Earth Science Informatics). The code (tag v1.4.0) implements the cross-model benchmark of TerraMind and Prithvi-EO-2.0 against a 17-layer geomorphometric baseline under spatial-block cross-validation, with the random-initialization ablation, point-probe controls (context-matched manual baselines, spectral scar probe, constrained-negative sensitivity), the control arms (ground motion, movement typology, geology, climate), and the audit re-analyses (positional floor on the benchmark folds for every pipeline, range of spatial dependence against the block size, variance of the negative draw and of the block-grid placement, readers tuned by nested spatial cross-validation), together with the table and figure generators and the per-fold result files (JSON) behind every reported number. The deposit adds the derived datasets: 17-layer geomorphometric feature stacks (npz) for five Chilean basins, annual 2023 Sentinel-2 L2A composites (GeoTIFF) built per MGRS tile for Huasco, Maipo and Maule, the sampled benchmark points with spatial-block ids (CSV), the Prithvi input patches of those points (uint16 memmaps) and the Maule fold indices. data/ZENODO_DEPOSIT.md documents every file. The transformer-block sweep, low-rank adaptation, the pre-/post-event test and the Prithvi susceptibility surfaces predate the Prithvi input-offset correction; their result files are kept in the code for traceability but are not reported.",
   "creators": [
     {
       "name": "Parra, Francisco",
-      "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile",
+      "affiliation": "Department of Informatics Engineering, Universidad de Santiago de Chile, Santiago, Chile",
       "orcid": "0009-0006-0435-1854"
     },
     {
@@ -13,11 +13,11 @@
     },
     {
       "name": "Bonacic, Carolina",
-      "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
+      "affiliation": "Department of Informatics Engineering, Universidad de Santiago de Chile, Santiago, Chile"
     },
     {
       "name": "Marín, Mauricio",
-      "affiliation": "Departamento de Ingeniería Informática, Universidad de Santiago de Chile, Santiago, Chile"
+      "affiliation": "Department of Informatics Engineering, Universidad de Santiago de Chile, Santiago, Chile"
     }
   ],
   "keywords": [
